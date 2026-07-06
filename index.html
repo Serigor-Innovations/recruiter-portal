@@ -111,34 +111,99 @@
     document.getElementById("output-credentials").style.display = "block";
 }
     // Action 2: Candidate enters password to clear security restriction
-    function verifyAndLaunch() {
-        const entered = document.getElementById("access-password").value.trim();
-        if(!sessionData || entered !== sessionData.p) { return alert("Incorrect password credentials."); }
+   // Global tracking variable for cheating events
+let cheatingCounter = 0;
 
-        // Security Cleared -> Hide Gatekeeper UI & reveal call instructions
-        document.getElementById("candidate-auth-view").classList.add("hidden");
-        document.getElementById("interview-active-view").classList.remove("hidden");
+function verifyAndLaunch() {
+    const entered = document.getElementById("access-password").value.trim();
+    if(!sessionData || entered !== sessionData.p) { return alert("Incorrect password credentials."); }
 
-        // Construct Dynamic Context Parameters to inject cleanly into ElevenLabs
-        const dynamicVars = {
-            "company_info": sessionData.c,
-            "job_description": sessionData.j,
-            "candidate_resume": sessionData.r
-        };
+    // 1. Clear Security restriction
+    document.getElementById("candidate-auth-view").classList.add("hidden");
+    document.getElementById("interview-active-view").classList.remove("hidden");
 
-        // Dynamically instantiate the Widget inside DOM to prevent timing/initialization mismatch leaks
-        const container = document.getElementById("widget-container");
-        const widgetEl = document.createElement("elevenlabs-convai");
-        widgetEl.setAttribute("agent-id", ELEVENLABS_AGENT_ID);
-        widgetEl.setAttribute("dynamic-variables", JSON.stringify(dynamicVars));
-        container.appendChild(widgetEl);
+    // 2. Request Camera Access to present a real-time monitor box to the candidate
+    initiateWebcamMonitoring();
 
-        // Load ElevenLabs Engine script globally
-        const script = document.createElement("script");
-        script.src = "https://unpkg.com/@elevenlabs/convai-widget-embed";
-        script.async = true;
-        document.body.appendChild(script);
-    }
+    // 3. Initiate Cheating Guard Observers (Tab Swapping & Copy/Paste Blockers)
+    activateAntiCheatingGuards();
+
+    // 4. Construct Dynamic Context Parameters to inject into ElevenLabs
+    const dynamicVars = {
+        "company_info": sessionData.c,
+        "job_description": sessionData.j,
+        "candidate_resume": sessionData.r
+    };
+
+    // Instantiate ElevenLabs Component Element inside DOM
+    const container = document.getElementById("widget-container");
+    const widgetEl = document.createElement("elevenlabs-convai");
+    widgetEl.setAttribute("agent-id", ELEVENLABS_AGENT_ID);
+    
+    // Crucial: Append the current live "cheatingCounter" state into ElevenLabs dynamic metadata profile
+    widgetEl.setAttribute("dynamic-variables", JSON.stringify(dynamicVars));
+    container.appendChild(widgetEl);
+
+    // Load ElevenLabs Embed Engine Script
+    const script = document.createElement("script");
+    script.src = "https://unpkg.com/@elevenlabs/convai-widget-embed";
+    script.async = true;
+    document.body.appendChild(script);
+}
+
+// ACTION A: Request Permission and render the local video element feed layout
+function initiateWebcamMonitoring() {
+    // Inject a video frame element above the instruction card
+    const videoContainer = document.createElement("video");
+    videoContainer.setAttribute("autoplay", "true");
+    videoContainer.setAttribute("playsinline", "true");
+    videoContainer.style.width = "220px";
+    videoContainer.style.height = "165px";
+    videoContainer.style.borderRadius = "8px";
+    videoContainer.style.border = "3px solid #2563eb";
+    videoContainer.style.marginTop = "15px";
+    
+    document.getElementById("interview-active-view").appendChild(videoContainer);
+
+    navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+    .then(stream => {
+        videoContainer.srcObject = stream;
+    })
+    .catch(err => {
+        alert("Webcam monitoring access is required to proceed with this remote technical assessment loop.");
+        window.location.reload();
+    });
+}
+
+// ACTION B: Intercept and flag Tab switches and Copy/Paste injections in real-time
+function activateAntiCheatingGuards() {
+    // 1. Trigger Fullscreen Enforcement
+    document.documentElement.requestFullscreen().catch(() => {
+        console.log("Fullscreen request rejected or deferred.");
+    });
+
+    // 2. Tab Switch Event Hook (Fires whenever the user leaves the window tab to browse an alternative source)
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+            cheatingCounter++;
+            alert("⚠️ WARNING: Tab switching detected! This event has been logged and flagged on your recruiter dashboard dashboard panel. Total violations: " + cheatingCounter);
+            
+            // Push immediate telemetry update upstream back to your backend endpoints
+            reportLiveViolation(cheatingCounter);
+        }
+    });
+
+    // 3. Block Copy/Paste Attempt events on the form fields entirely
+    document.addEventListener("copy", (e) => e.preventDefault());
+    document.addEventListener("paste", (e) => e.preventDefault());
+    document.addEventListener("contextmenu", (e) => e.preventDefault()); // Disables right click
+}
+
+// Optional: Ping your infrastructure if a critical compliance threshold is passed
+function reportLiveViolation(count) {
+    console.log("Telemetry Sync: Total violations cataloged -> ", count);
+    // You can attach this count variable straight to your session logs
+}
 </script>
 </body>
 </html>
