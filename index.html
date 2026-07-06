@@ -69,41 +69,47 @@
 
     // Detect execution routing path on page load
     window.onload = function() {
-        if(window.location.hash) {
-            // URL contains data hash -> Route directly to Candidate Screen
-            document.getElementById("recruiter-view").classList.add("hidden");
-            document.getElementById("candidate-auth-view").classList.remove("hidden");
+    if(window.location.hash) {
+        document.getElementById("recruiter-view").classList.add("hidden");
+        document.getElementById("candidate-auth-view").classList.remove("hidden");
+        
+        try {
+            // SAFE DECODING: Rebuilds the complex strings perfectly
+            const rawHash = window.location.hash.substring(1);
+            const decodedJson = decodeURIComponent(atob(rawHash).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
             
-            try {
-                // Decode structural context parameters back out safely
-                const rawJson = atob(window.location.hash.substring(1));
-                sessionData = JSON.parse(rawJson);
-            } catch(e) {
-                alert("Invalid or corrupt interview URL structure.");
-            }
+            sessionData = JSON.parse(decodedJson);
+        } catch(e) {
+            alert("Invalid or corrupt interview URL structure.");
         }
-    };
+    }
+};
 
     // Action 1: Recruiter generates unique criteria link 
     function generateCandidateAccess() {
-        const company = document.getElementById("comp-name").value;
-        const jd = document.getElementById("jd-text").value;
-        const resume = document.getElementById("resume-text").value;
-        const generatedPassword = "INT-" + Math.floor(100000 + Math.random() * 900000);
+    const company = document.getElementById("comp-name").value;
+    const jd = document.getElementById("jd-text").value;
+    const resume = document.getElementById("resume-text").value;
+    const generatedPassword = "INT-" + Math.floor(100000 + Math.random() * 900000);
 
-        if(!company || !jd || !resume) { return alert("Please populate all text fields."); }
+    if(!company || !jd || !resume) { return alert("Please populate all text fields."); }
 
-        const payload = { c: company, j: jd, r: resume, p: generatedPassword };
-        
-        // Encode payload string directly into the URL hash safely using base64
-        const encodedHash = btoa(JSON.stringify(payload));
-        const finalLink = window.location.origin + window.location.pathname + "#" + encodedHash;
+    const payload = { c: company, j: jd, r: resume, p: generatedPassword };
+    
+    // SAFE ENCODING: Handles special characters, spaces, and line breaks smoothly
+    const jsonString = JSON.stringify(payload);
+    const encodedHash = btoa(encodeURIComponent(jsonString).replace(/%([0-9A-F]{2})/g, function(match, p1) {
+        return String.fromCharCode('0x' + p1);
+    }));
+    
+    const finalLink = window.location.origin + window.location.pathname + "#" + encodedHash;
 
-        document.getElementById("cand-link").innerText = finalLink;
-        document.getElementById("cand-pass").innerText = generatedPassword;
-        document.getElementById("output-credentials").style.display = "block";
-    }
-
+    document.getElementById("cand-link").innerText = finalLink;
+    document.getElementById("cand-pass").innerText = generatedPassword;
+    document.getElementById("output-credentials").style.display = "block";
+}
     // Action 2: Candidate enters password to clear security restriction
     function verifyAndLaunch() {
         const entered = document.getElementById("access-password").value.trim();
