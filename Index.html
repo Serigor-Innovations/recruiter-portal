@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Recruitment Screening Portal</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f3f4f6; margin: 0; padding: 40px; display: flex; justify-content: center; }
+        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 100%; max-width: 600px; }
+        h2 { color: #1f2937; margin-top: 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
+        label { font-weight: 600; display: block; margin: 15px 0 5px; color: #4b5563; }
+        input, textarea { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        textarea { height: 120px; resize: vertical; }
+        button { background: #2563eb; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 20px; font-size: 16px; }
+        button:hover { background: #1d4ed8; }
+        .result-box { background: #ecfdf5; border: 1px solid #10b981; padding: 15px; border-radius: 6px; margin-top: 20px; word-break: break-all; display: none; }
+        .hidden { display: none !important; }
+        .candidate-auth { text-align: center; padding: 40px 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- VIEW 1: RECRUITER FORM COMPONENT -->
+    <div id="recruiter-view">
+        <h2>Recruiter Dashboard: Setup New Interview</h2>
+        <label>Company Name</label>
+        <input type="text" id="comp-name" placeholder="e.g. Acme Corp">
+        
+        <label>Job Description (JD)</label>
+        <textarea id="jd-text" placeholder="Paste the job requirements and responsibilities here..."></textarea>
+        
+        <label>Candidate Resume Text</label>
+        <textarea id="resume-text" placeholder="Paste the text from the candidate's CV here..."></textarea>
+        
+        <button onclick="generateCandidateAccess()">Generate Interview Link & Credentials</button>
+        
+        <div id="output-credentials" class="result-box">
+            <strong style="color: #065f46;">✔ Credentials Generated Successfully!</strong><br><br>
+            <strong>Send this Link to Candidate:</strong> <span id="cand-link" style="color:#2563eb;"></span><br><br>
+            <strong>Interview Login Password:</strong> <span id="cand-pass" style="color:#b91c1c; font-family:monospace; font-size:16px;"></span>
+        </div>
+    </div>
+
+    <!-- VIEW 2: CANDIDATE GATEKEEPER COMPONENT -->
+    <div id="candidate-auth-view" class="hidden candidate-auth">
+        <h2>AI Technical Interview Portal</h2>
+        <p>Please enter the dynamic interview password provided by your recruiter to initiate your voice session.</p>
+        <input type="text" id="access-password" placeholder="Enter Access Password" style="text-align:center; max-width:300px; font-size:18px; margin: 20px 0;"><br>
+        <button onclick="verifyAndLaunch()" style="max-width:200px;">Unlock Interview</button>
+    </div>
+
+    <!-- VIEW 3: ACTIVE CALL SCREEN COMPONENT -->
+    <div id="interview-active-view" class="hidden" style="text-align: center; padding: 5px 0;">
+        <h2>Interview Session Active</h2>
+        <p>Your background context has been verified. Click the floating blue widget badge in the bottom-right corner of your screen to talk to your AI interviewer.</p>
+    </div>
+</div>
+
+<!-- INJECT WIDGET TARGET COMPONENT -->
+<div id="widget-container"></div>
+
+<script>
+    // Configuration Setup: Input your permanent ElevenLabs ID here!
+    const ELEVENLABS_AGENT_ID = "agent_2801kww0es8wfbj98vga0f606ph5"; 
+
+    // Global variables to extract from URL
+    let sessionData = null;
+
+    // Detect execution routing path on page load
+    window.onload = function() {
+        if(window.location.hash) {
+            // URL contains data hash -> Route directly to Candidate Screen
+            document.getElementById("recruiter-view").classList.add("hidden");
+            document.getElementById("candidate-auth-view").classList.remove("hidden");
+            
+            try {
+                // Decode structural context parameters back out safely
+                const rawJson = atob(window.location.hash.substring(1));
+                sessionData = JSON.parse(rawJson);
+            } catch(e) {
+                alert("Invalid or corrupt interview URL structure.");
+            }
+        }
+    };
+
+    // Action 1: Recruiter generates unique criteria link 
+    function generateCandidateAccess() {
+        const company = document.getElementById("comp-name").value;
+        const jd = document.getElementById("jd-text").value;
+        const resume = document.getElementById("resume-text").value;
+        const generatedPassword = "INT-" + Math.floor(100000 + Math.random() * 900000);
+
+        if(!company || !jd || !resume) { return alert("Please populate all text fields."); }
+
+        const payload = { c: company, j: jd, r: resume, p: generatedPassword };
+        
+        // Encode payload string directly into the URL hash safely using base64
+        const encodedHash = btoa(JSON.stringify(payload));
+        const finalLink = window.location.origin + window.location.pathname + "#" + encodedHash;
+
+        document.getElementById("cand-link").innerText = finalLink;
+        document.getElementById("cand-pass").innerText = generatedPassword;
+        document.getElementById("output-credentials").style.display = "block";
+    }
+
+    // Action 2: Candidate enters password to clear security restriction
+    function verifyAndLaunch() {
+        const entered = document.getElementById("access-password").value.trim();
+        if(!sessionData || entered !== sessionData.p) { return alert("Incorrect password credentials."); }
+
+        // Security Cleared -> Hide Gatekeeper UI & reveal call instructions
+        document.getElementById("candidate-auth-view").classList.add("hidden");
+        document.getElementById("interview-active-view").classList.remove("hidden");
+
+        // Construct Dynamic Context Parameters to inject cleanly into ElevenLabs
+        const dynamicVars = {
+            "company_info": sessionData.c,
+            "job_description": sessionData.j,
+            "candidate_resume": sessionData.r
+        };
+
+        // Dynamically instantiate the Widget inside DOM to prevent timing/initialization mismatch leaks
+        const container = document.getElementById("widget-container");
+        const widgetEl = document.createElement("elevenlabs-convai");
+        widgetEl.setAttribute("agent-id", ELEVENLABS_AGENT_ID);
+        widgetEl.setAttribute("dynamic-variables", JSON.stringify(dynamicVars));
+        container.appendChild(widgetEl);
+
+        // Load ElevenLabs Engine script globally
+        const script = document.createElement("script");
+        script.src = "https://unpkg.com/@elevenlabs/convai-widget-embed";
+        script.async = true;
+        document.body.appendChild(script);
+    }
+</script>
+</body>
+</html>
