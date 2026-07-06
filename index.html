@@ -3,207 +3,210 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Recruitment Screening Portal</title>
+    <title>Serigor AI Assessment Platform</title>
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f3f4f6; margin: 0; padding: 40px; display: flex; justify-content: center; }
-        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 100%; max-width: 600px; }
-        h2 { color: #1f2937; margin-top: 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
-        label { font-weight: 600; display: block; margin: 15px 0 5px; color: #4b5563; }
-        input, textarea { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
-        textarea { height: 120px; resize: vertical; }
-        button { background: #2563eb; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 20px; font-size: 16px; }
-        button:hover { background: #1d4ed8; }
-        .result-box { background: #ecfdf5; border: 1px solid #10b981; padding: 15px; border-radius: 6px; margin-top: 20px; word-break: break-all; display: none; }
+        /* SERIGOR BRAND COLOR PALETTE CONFIGURATION */
+        :root {
+            --serigor-primary: #0F172A;   /* Deep Corporate Slate/Navy Blue */
+            --serigor-accent: #2563EB;    /* Vibrant Professional Blue */
+            --serigor-accent-hover: #1D4ED8;
+            --serigor-bg: #F8FAFC;        /* Clean Pearl/Light Gray Background */
+            --serigor-text: #334155;
+            --serigor-card-bg: #FFFFFF;
+        }
+
+        body { font-family: 'Inter', system-ui, sans-serif; background-color: var(--serigor-bg); margin: 0; padding: 40px; display: flex; justify-content: center; color: var(--serigor-text); }
+        .container { background: var(--serigor-card-bg); padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); width: 100%; max-width: 650px; border-top: 5px solid var(--serigor-accent); }
+        
+        /* BRAND LOGO HEADER COMPONENT */
+        .brand-header { text-align: center; margin-bottom: 30px; }
+        .brand-logo { font-size: 28px; font-weight: 800; color: var(--serigor-primary); letter-spacing: -0.5px; }
+        .brand-logo span { color: var(--serigor-accent); }
+        .brand-subtitle { font-size: 14px; color: #64748B; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px; }
+
+        h2 { color: var(--serigor-primary); margin-top: 0; font-size: 22px; text-align: center; }
+        label { font-weight: 600; display: block; margin: 20px 0 6px; color: var(--serigor-primary); font-size: 14px; }
+        input, textarea { width: 100%; padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px; box-sizing: border-box; font-size: 14px; background: #F8FAFC; transition: 0.2s; }
+        input:focus, textarea:focus { outline: none; border-color: var(--serigor-accent); background: #FFF; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        textarea { height: 110px; resize: vertical; }
+        
+        button { background: var(--serigor-accent); color: white; border: none; padding: 14px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 24px; font-size: 15px; transition: 0.2s; }
+        button:hover { background: var(--serigor-accent-hover); }
+        
+        .result-box { background: #F0FDF4; border: 1px solid #BBF7D0; padding: 20px; border-radius: 8px; margin-top: 25px; word-break: break-all; display: none; }
         .hidden { display: none !important; }
-        .candidate-auth { text-align: center; padding: 40px 20px; }
+        
+        /* CAMERA LAYOUT MODAL */
+        #webcam-feed { width: 240px; height: 180px; border-radius: 12px; border: 4px solid var(--serigor-accent); background: #000; margin: 20px auto; display: block; transform: scaleX(-1); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .status-badge { display: inline-block; padding: 6px 12px; background: #FEE2E2; color: #EF4444; border-radius: 20px; font-size: 12px; font-weight: 700; margin-bottom: 15px; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- VIEW 1: RECRUITER FORM COMPONENT -->
+    <!-- SERIGOR INTEGRATED BRAND IDENTITY -->
+    <div class="brand-header">
+        <div class="brand-logo">SERIGOR<span>.AI</span></div>
+        <div class="brand-subtitle">Enterprise Candidate Screening</div>
+    </div>
+
+    <!-- VIEW 1: RECRUITER FRAMEWORK -->
     <div id="recruiter-view">
-        <h2>Recruiter Dashboard: Setup New Interview</h2>
-        <label>Company Name</label>
-        <input type="text" id="comp-name" placeholder="e.g. Acme Corp">
+        <h2>Configure Candidate Session</h2>
+        <label>Target Company Corporate Assignment</label>
+        <input type="text" id="comp-name" placeholder="e.g. Serigor Global Logistics">
         
-        <label>Job Description (JD)</label>
-        <textarea id="jd-text" placeholder="Paste the job requirements and responsibilities here..."></textarea>
+        <label>Core Job Specifications (JD)</label>
+        <textarea id="jd-text" placeholder="Paste structural JD rules..."></textarea>
         
-        <label>Candidate Resume Text</label>
-        <textarea id="resume-text" placeholder="Paste the text from the candidate's CV here..."></textarea>
+        <label>Candidate Professional Profile / Resume CV</label>
+        <textarea id="resume-text" placeholder="Paste clean extraction profile..."></textarea>
         
-        <button onclick="generateCandidateAccess()">Generate Interview Link & Credentials</button>
+        <button onclick="generateCandidateAccess()">Generate Private Assessment Key</button>
         
         <div id="output-credentials" class="result-box">
-            <strong style="color: #065f46;">✔ Credentials Generated Successfully!</strong><br><br>
-            <strong>Send this Link to Candidate:</strong> <span id="cand-link" style="color:#2563eb;"></span><br><br>
-            <strong>Interview Login Password:</strong> <span id="cand-pass" style="color:#b91c1c; font-family:monospace; font-size:16px;"></span>
+            <strong style="color: #166534;">✔ Encryption Complete</strong><br><br>
+            <strong>Secure Link:</strong> <span id="cand-link" style="color:var(--serigor-accent); font-weight:500;"></span><br><br>
+            <strong>Access Token Password:</strong> <span id="cand-pass" style="color:#B91C1C; font-family:monospace; font-size:16px; font-weight:700;"></span>
         </div>
     </div>
 
-    <!-- VIEW 2: CANDIDATE GATEKEEPER COMPONENT -->
-    <div id="candidate-auth-view" class="hidden candidate-auth">
-        <h2>AI Technical Interview Portal</h2>
-        <p>Please enter the dynamic interview password provided by your recruiter to initiate your voice session.</p>
-        <input type="text" id="access-password" placeholder="Enter Access Password" style="text-align:center; max-width:300px; font-size:18px; margin: 20px 0;"><br>
-        <button onclick="verifyAndLaunch()" style="max-width:200px;">Unlock Interview</button>
+    <!-- VIEW 2: SECURITY LOGIN GATEWAY -->
+    <div id="candidate-auth-view" class="hidden" style="text-align: center;">
+        <h2>Identity & Credentials Verification</h2>
+        <p style="color: #64748B; font-size:14px;">Enter the access token sent by your Serigor Account Executive to clear secure execution paths.</p>
+        <input type="text" id="access-password" placeholder="Format: INT-XXXXXX" style="text-align:center; max-width:320px; font-size:16px; margin: 20px 0;"><br>
+        <button onclick="verifyAndLaunch()" style="max-width:240px;">Verify Identity & Open Platform</button>
     </div>
 
-    <!-- VIEW 3: ACTIVE CALL SCREEN COMPONENT -->
-    <div id="interview-active-view" class="hidden" style="text-align: center; padding: 5px 0;">
-        <h2>Interview Session Active</h2>
-        <p>Your background context has been verified. Click the floating blue widget badge in the bottom-right corner of your screen to talk to your AI interviewer.</p>
+    <!-- VIEW 3: LIVE SCREENING APPLICATION ENVIRONMENT -->
+    <div id="interview-active-view" class="hidden" style="text-align: center;">
+        <div class="status-badge">🔴 Live Proctoring Activated</div>
+        <h2>Interview System Active</h2>
+        <p style="color: #64748B; font-size: 14px; max-width: 450px; margin: 0 auto 20px;">Your workspace interface is locked. Click the round blue call controller in the bottom right corner of the screen to interact with your reviewer panel.</p>
+        <video id="webcam-feed" autoplay playsinline muted></video>
     </div>
 </div>
 
-<!-- INJECT WIDGET TARGET COMPONENT -->
 <div id="widget-container"></div>
 
 <script>
-    // Configuration Setup: Input your permanent ElevenLabs ID here!
-    const ELEVENLABS_AGENT_ID = "agent_6301kwwenbw1ffmvbk1m2rf63wqh"; 
-
-    // Global variables to extract from URL
+    const ELEVENLABS_AGENT_ID = "agent_6301kwwenbw1ffmvbk1m2rf63wqh"; // Paste your ID string here!
+    const GOOGLE_SCRIPT_STREAM_URL = "https://script.google.com/macros/s/AKfycbyG-EjXsKBGPKMIZeLOqTEttPa_FnVf5Kq-PkleAQRWdkxbfg7USR-8YI5FA1_xlclS/exec"; // Paste your new Apps Script link here!
+    
     let sessionData = null;
+    let cheatingCounter = 0;
+    let mediaRecorder = null;
+    let recordedChunks = [];
 
-    // Detect execution routing path on page load
     window.onload = function() {
-    if(window.location.hash) {
-        document.getElementById("recruiter-view").classList.add("hidden");
-        document.getElementById("candidate-auth-view").classList.remove("hidden");
-        
-        try {
-            // SAFE DECODING: Rebuilds the complex strings perfectly
-            const rawHash = window.location.hash.substring(1);
-            const decodedJson = decodeURIComponent(atob(rawHash).split('').map(function(c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-            
-            sessionData = JSON.parse(decodedJson);
-        } catch(e) {
-            alert("Invalid or corrupt interview URL structure.");
+        if(window.location.hash) {
+            document.getElementById("recruiter-view").classList.add("hidden");
+            document.getElementById("candidate-auth-view").classList.remove("hidden");
+            try {
+                const rawHash = window.location.hash.substring(1);
+                const decodedJson = decodeURIComponent(atob(rawHash).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+                sessionData = JSON.parse(decodedJson);
+            } catch(e) { alert("Corrupted session tracking hash parameters."); }
         }
-    }
-};
-
-    // Action 1: Recruiter generates unique criteria link 
-    function generateCandidateAccess() {
-    const company = document.getElementById("comp-name").value;
-    const jd = document.getElementById("jd-text").value;
-    const resume = document.getElementById("resume-text").value;
-    const generatedPassword = "INT-" + Math.floor(100000 + Math.random() * 900000);
-
-    if(!company || !jd || !resume) { return alert("Please populate all text fields."); }
-
-    const payload = { c: company, j: jd, r: resume, p: generatedPassword };
-    
-    // SAFE ENCODING: Handles special characters, spaces, and line breaks smoothly
-    const jsonString = JSON.stringify(payload);
-    const encodedHash = btoa(encodeURIComponent(jsonString).replace(/%([0-9A-F]{2})/g, function(match, p1) {
-        return String.fromCharCode('0x' + p1);
-    }));
-    
-    const finalLink = window.location.origin + window.location.pathname + "#" + encodedHash;
-
-    document.getElementById("cand-link").innerText = finalLink;
-    document.getElementById("cand-pass").innerText = generatedPassword;
-    document.getElementById("output-credentials").style.display = "block";
-}
-    // Action 2: Candidate enters password to clear security restriction
-   // Global tracking variable for cheating events
-let cheatingCounter = 0;
-
-function verifyAndLaunch() {
-    const entered = document.getElementById("access-password").value.trim();
-    if(!sessionData || entered !== sessionData.p) { return alert("Incorrect password credentials."); }
-
-    // 1. Clear Security restriction
-    document.getElementById("candidate-auth-view").classList.add("hidden");
-    document.getElementById("interview-active-view").classList.remove("hidden");
-
-    // 2. Request Camera Access to present a real-time monitor box to the candidate
-    initiateWebcamMonitoring();
-
-    // 3. Initiate Cheating Guard Observers (Tab Swapping & Copy/Paste Blockers)
-    activateAntiCheatingGuards();
-
-    // 4. Construct Dynamic Context Parameters to inject into ElevenLabs
-    const dynamicVars = {
-        "company_info": sessionData.c,
-        "job_description": sessionData.j,
-        "candidate_resume": sessionData.r
     };
 
-    // Instantiate ElevenLabs Component Element inside DOM
-    const container = document.getElementById("widget-container");
-    const widgetEl = document.createElement("elevenlabs-convai");
-    widgetEl.setAttribute("agent-id", ELEVENLABS_AGENT_ID);
-    
-    // Crucial: Append the current live "cheatingCounter" state into ElevenLabs dynamic metadata profile
-    widgetEl.setAttribute("dynamic-variables", JSON.stringify(dynamicVars));
-    container.appendChild(widgetEl);
+    function generateCandidateAccess() {
+        const company = document.getElementById("comp-name").value;
+        const jd = document.getElementById("jd-text").value;
+        const resume = document.getElementById("resume-text").value;
+        const generatedPassword = "INT-" + Math.floor(100000 + Math.random() * 900000);
 
-    // Load ElevenLabs Embed Engine Script
-    const script = document.createElement("script");
-    script.src = "https://unpkg.com/@elevenlabs/convai-widget-embed";
-    script.async = true;
-    document.body.appendChild(script);
-}
+        if(!company || !jd || !resume) { return alert("Complete all data points before encryption."); }
 
-// ACTION A: Request Permission and render the local video element feed layout
-function initiateWebcamMonitoring() {
-    // Inject a video frame element above the instruction card
-    const videoContainer = document.createElement("video");
-    videoContainer.setAttribute("autoplay", "true");
-    videoContainer.setAttribute("playsinline", "true");
-    videoContainer.style.width = "220px";
-    videoContainer.style.height = "165px";
-    videoContainer.style.borderRadius = "8px";
-    videoContainer.style.border = "3px solid #2563eb";
-    videoContainer.style.marginTop = "15px";
-    
-    document.getElementById("interview-active-view").appendChild(videoContainer);
+        const payload = { c: company, j: jd, r: resume, p: generatedPassword };
+        const jsonString = JSON.stringify(payload);
+        const encodedHash = btoa(encodeURIComponent(jsonString).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
+        
+        // This generates your baseline payload token URL link layout
+        const finalLink = window.location.origin + window.location.pathname + "#" + encodedHash;
+        document.getElementById("cand-link").innerText = finalLink;
+        document.getElementById("cand-pass").innerText = generatedPassword;
+        document.getElementById("output-credentials").style.display = "block";
+    }
 
-    navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-    .then(stream => {
-        videoContainer.srcObject = stream;
-    })
-    .catch(err => {
-        alert("Webcam monitoring access is required to proceed with this remote technical assessment loop.");
-        window.location.reload();
-    });
-}
+    function verifyAndLaunch() {
+        const entered = document.getElementById("access-password").value.trim();
+        if(!sessionData || entered !== sessionData.p) { return alert("Invalid entry token key."); }
 
-// ACTION B: Intercept and flag Tab switches and Copy/Paste injections in real-time
-function activateAntiCheatingGuards() {
-    // 1. Trigger Fullscreen Enforcement
-    document.documentElement.requestFullscreen().catch(() => {
-        console.log("Fullscreen request rejected or deferred.");
-    });
+        document.getElementById("candidate-auth-view").classList.add("hidden");
+        document.getElementById("interview-active-view").classList.remove("hidden");
 
-    // 2. Tab Switch Event Hook (Fires whenever the user leaves the window tab to browse an alternative source)
-    document.addEventListener("visibilitychange", () => {
-        if (document.hidden) {
-            cheatingCounter++;
-            alert("⚠️ WARNING: Tab switching detected! This event has been logged and flagged on your recruiter dashboard dashboard panel. Total violations: " + cheatingCounter);
+        // Request audio/video track constraints
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        .then(stream => {
+            document.getElementById("webcam-feed").srcObject = stream;
             
-            // Push immediate telemetry update upstream back to your backend endpoints
-            reportLiveViolation(cheatingCounter);
-        }
-    });
+            // INTIALIZE CAMERA RECORDER COMPONENT
+            mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8' });
+            mediaRecorder.ondataavailable = (e) => { if(e.data.size > 0) recordedChunks.push(e.data); };
+            
+            // When the evaluation completes, transmit the generated recording binary to Google Drive
+            mediaRecorder.onstop = () => { uploadVideoAssetToDrive(); };
+            mediaRecorder.start(1000); // Record chunks in 1-second frames
+            
+            initializeAssessmentWidgets();
+        })
+        .catch(() => {
+            alert("Camera framework validation required for Serigor compliance rules.");
+            window.location.reload();
+        });
+    }
 
-    // 3. Block Copy/Paste Attempt events on the form fields entirely
-    document.addEventListener("copy", (e) => e.preventDefault());
-    document.addEventListener("paste", (e) => e.preventDefault());
-    document.addEventListener("contextmenu", (e) => e.preventDefault()); // Disables right click
-}
+    function initializeAssessmentWidgets() {
+        document.documentElement.requestFullscreen().catch(() => {});
+        
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden) {
+                cheatingCounter++;
+                alert("🚨 SECURITY NOTICE: Tab displacement logged by Serigor. Incident counts: " + cheatingCounter);
+            }
+        });
 
-// Optional: Ping your infrastructure if a critical compliance threshold is passed
-function reportLiveViolation(count) {
-    console.log("Telemetry Sync: Total violations cataloged -> ", count);
-    // You can attach this count variable straight to your session logs
-}
+        document.addEventListener("copy", e => e.preventDefault());
+        document.addEventListener("paste", e => e.preventDefault());
+
+        const dynamicVars = { "company_info": sessionData.c, "job_description": sessionData.j, "candidate_resume": sessionData.r };
+        const container = document.getElementById("widget-container");
+        const widgetEl = document.createElement("elevenlabs-convai");
+        widgetEl.setAttribute("agent-id", ELEVENLABS_AGENT_ID);
+        widgetEl.setAttribute("dynamic-variables", JSON.stringify(dynamicVars));
+        container.appendChild(widgetEl);
+
+        const script = document.createElement("script");
+        script.src = "https://unpkg.com/@elevenlabs/convai-widget-embed";
+        script.async = true;
+        document.body.appendChild(script);
+        
+        // Listen to standard widget disconnection states to stop processing loops safely
+        window.addEventListener("message", function(event) {
+             if(event.data && event.data.type === "elevenlabs-convai-call-ended") {
+                 if(mediaRecorder && mediaRecorder.state !== "inactive") { mediaRecorder.stop(); }
+             }
+        });
+    }
+
+    function uploadVideoAssetToDrive() {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = function() {
+            const base64Data = reader.result.split(',')[1];
+            fetch(GOOGLE_SCRIPT_STREAM_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    fileData: base64Data,
+                    filename: "Interview_" + (sessionData.c).replace(/\s+/g, '_') + "_" + Date.now() + ".webm",
+                    cheats: cheatingCounter + " Switches"
+                })
+            }).then(r => console.log("Video telemetry uploaded successfully."));
+        };
+    }
 </script>
 </body>
 </html>
