@@ -92,7 +92,7 @@
     let mediaRecorder = null;
     let recordedChunks = [];
 
-    // // 1.function generateCandidateAccess() {
+    // // function generateCandidateAccess() {
         const company = document.getElementById("comp-name").value;
         const jd = document.getElementById("jd-text").value;
         const resume = document.getElementById("resume-text").value;
@@ -111,13 +111,14 @@
             p: generatedPassword
         };
 
-        // Submitting as text/plain without custom properties lets Google accept the packet seamlessly
+        // Processing the response as text completely prevents CORS cross-domain parsing errors
         fetch(GOOGLE_SCRIPT_URL, {
             method: "POST",
             body: JSON.stringify(payload)
         })
-        .then(res => res.json())
-        .then(data => {
+        .then(res => res.text()) 
+        .then(textData => {
+            const data = JSON.parse(textData); // Safely deserialize the structural plain text
             if(data.success) {
                 const shortLink = window.location.origin + window.location.pathname + "?id=" + uniqueId;
                 document.getElementById("cand-link").innerText = shortLink;
