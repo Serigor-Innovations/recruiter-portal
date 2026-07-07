@@ -93,46 +93,62 @@
     let recordedChunks = [];
 
     // // function generateCandidateAccess() {
-        const company = document.getElementById("comp-name").value;
-        const jd = document.getElementById("jd-text").value;
-        const resume = document.getElementById("resume-text").value;
-        
-        const uniqueId = Math.floor(100000 + Math.random() * 900000);
-        const generatedPassword = "INT-" + uniqueId;
 
-        if(!company || !jd || !resume) { return alert("Please fill out all configuration form elements."); }
+    const company = document.getElementById("comp-name").value;
+    const jd = document.getElementById("jd-text").value;
+    const resume = document.getElementById("resume-text").value;
 
-        const payload = {
-            action: "saveSession",
-            id: uniqueId,
-            c: company,
-            j: jd,
-            r: resume,
-            p: generatedPassword
-        };
+    const uniqueId = Math.floor(100000 + Math.random() * 900000);
+    const generatedPassword = "INT-" + uniqueId;
 
-        // Processing the response as text completely prevents CORS cross-domain parsing errors
-        fetch(GOOGLE_SCRIPT_URL, {
-            method: "POST",
-            body: JSON.stringify(payload)
-        })
-        .then(res => res.text()) 
-        .then(textData => {
-            const data = JSON.parse(textData); // Safely deserialize the structural plain text
-            if(data.success) {
-                const shortLink = window.location.origin + window.location.pathname + "?id=" + uniqueId;
-                document.getElementById("cand-link").innerText = shortLink;
-                document.getElementById("cand-pass").innerText = generatedPassword;
-                document.getElementById("output-credentials").style.display = "block";
-            } else {
-                alert("Database Engine Error: " + data.error);
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            alert("Connection error occurred when communicating with Google Cloud.");
-        });
+    if (!company || !jd || !resume) {
+        alert("Please fill out all configuration form elements.");
+        return;
     }
+
+    const payload = {
+        action: "saveSession",
+        id: uniqueId,
+        c: company,
+        j: jd,
+        r: resume,
+        p: generatedPassword
+    };
+
+    fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(res => res.text())
+    .then(text => {
+        const data = JSON.parse(text);
+
+        if (data.success) {
+
+            const shortLink =
+                window.location.origin +
+                window.location.pathname +
+                "?id=" +
+                uniqueId;
+
+            document.getElementById("cand-link").innerText = shortLink;
+            document.getElementById("cand-pass").innerText = generatedPassword;
+            document.getElementById("output-credentials").style.display = "block";
+
+        } else {
+            alert(data.error);
+        }
+
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Connection failed.");
+    });
+
+}
     // 2. DETECT URL REDIRECT FROM SHORT MAPS AND SEAMLESSLY MASK GITHUB
     window.onload = function() {
         const urlParams = new URLSearchParams(window.location.search);
