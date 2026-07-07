@@ -1,248 +1,365 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Serigor AI Assessment Platform</title>
-    <style>
-        :root {
-            --serigor-primary: #0F172A;   
-            --serigor-accent: #2563EB;    
-            --serigor-accent-hover: #1D4ED8;
-            --serigor-bg: #F8FAFC;        
-            --serigor-text: #334155;
-            --serigor-card-bg: #FFFFFF;
-        }
-        body { font-family: 'Inter', system-ui, sans-serif; background-color: var(--serigor-bg); margin: 0; padding: 40px; display: flex; justify-content: center; color: var(--serigor-text); }
-        .container { background: var(--serigor-card-bg); padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); width: 100%; max-width: 650px; border-top: 5px solid var(--serigor-accent); }
-        .brand-header { text-align: center; margin-bottom: 30px; }
-        .brand-logo { font-size: 28px; font-weight: 800; color: var(--serigor-primary); letter-spacing: -0.5px; }
-        .brand-logo span { color: var(--serigor-accent); }
-        .brand-subtitle { font-size: 14px; color: #64748B; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px; }
-        h2 { color: var(--serigor-primary); margin-top: 0; font-size: 22px; text-align: center; }
-        label { font-weight: 600; display: block; margin: 20px 0 6px; color: var(--serigor-primary); font-size: 14px; }
-        input, textarea { width: 100%; padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px; box-sizing: border-box; font-size: 14px; background: #F8FAFC; transition: 0.2s; }
-        input:focus, textarea:focus { outline: none; border-color: var(--serigor-accent); background: #FFF; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
-        textarea { height: 110px; resize: vertical; }
-        button { background: var(--serigor-accent); color: white; border: none; padding: 14px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 24px; font-size: 15px; transition: 0.2s; }
-        button:hover { background: var(--serigor-accent-hover); }
-        .result-box { background: #F0FDF4; border: 1px solid #BBF7D0; padding: 20px; border-radius: 8px; margin-top: 25px; word-break: break-all; display: none; }
-        .hidden { display: none !important; }
-        #webcam-feed { width: 240px; height: 180px; border-radius: 12px; border: 4px solid var(--serigor-accent); background: #000; margin: 20px auto; display: block; transform: scaleX(-1); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-        .status-badge { display: inline-block; padding: 6px 12px; background: #FEE2E2; color: #EF4444; border-radius: 20px; font-size: 12px; font-weight: 700; margin-bottom: 15px; text-transform: uppercase; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Serigor AI Assessment Platform</title>
+<style>
+  :root {
+    --serigor-primary: #0F172A;
+    --serigor-accent: #2563EB;
+    --serigor-accent-hover: #1D4ED8;
+    --serigor-bg: #F8FAFC;
+    --serigor-text: #334155;
+    --serigor-card-bg: #FFFFFF;
+  }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: var(--serigor-bg);
+    margin: 0;
+    padding: 40px;
+    display: flex;
+    justify-content: center;
+    color: var(--serigor-text);
+  }
+  .container {
+    background: var(--serigor-card-bg);
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 650px;
+    border-top: 5px solid var(--serigor-accent);
+  }
+  .brand-header { text-align: center; margin-bottom: 30px; }
+  .brand-logo { font-size: 28px; font-weight: 800; color: var(--serigor-primary); letter-spacing: -0.5px; }
+  .brand-logo span { color: var(--serigor-accent); }
+  .brand-subtitle { font-size: 14px; color: #64748B; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px; }
+  h2 { color: var(--serigor-primary); margin-top: 0; font-size: 22px; text-align: center; }
+  label { font-weight: 600; display: block; margin: 20px 0 6px; color: var(--serigor-primary); font-size: 14px; }
+  input, textarea {
+    width: 100%; padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px;
+    box-sizing: border-box; font-size: 14px; background: #F8FAFC; transition: 0.2s;
+    font-family: inherit;
+  }
+  input:focus, textarea:focus {
+    outline: none; border-color: var(--serigor-accent); background: #FFF;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+  textarea { height: 110px; resize: vertical; }
+  button {
+    background: var(--serigor-accent); color: white; border: none; padding: 14px 20px;
+    border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 24px;
+    font-size: 15px; transition: 0.2s;
+  }
+  button:disabled { opacity: 0.6; cursor: not-allowed; }
+  button:hover:not(:disabled) { background: var(--serigor-accent-hover); }
+  .result-box {
+    background: #F0FDF4; border: 1px solid #BBF7D0; padding: 20px; border-radius: 8px;
+    margin-top: 25px; word-break: break-all; display: none;
+  }
+  .error-box {
+    background: #FEF2F2; border: 1px solid #FECACA; color: #B91C1C; padding: 14px 16px;
+    border-radius: 8px; margin-top: 16px; font-size: 14px; display: none;
+  }
+  .hidden { display: none !important; }
+  #webcam-feed {
+    width: 240px; height: 180px; border-radius: 12px; border: 4px solid var(--serigor-accent);
+    background: #000; margin: 20px auto; display: block; transform: scaleX(-1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  .status-badge {
+    display: inline-block; padding: 6px 12px; background: #FEE2E2; color: #EF4444;
+    border-radius: 20px; font-size: 12px; font-weight: 700; margin-bottom: 15px;
+    text-transform: uppercase;
+  }
+  .copy-btn {
+    display: inline-block; margin-top: 4px; margin-left: 8px; padding: 2px 10px;
+    font-size: 12px; width: auto; margin-top: 0; vertical-align: middle;
+  }
+</style>
 </head>
 <body>
 
 <div class="container">
-    <div class="brand-header">
-        <div class="brand-logo">SERIGOR<span>.AI</span></div>
-        <div class="brand-subtitle">Enterprise Candidate Screening</div>
-    </div>
+  <div class="brand-header">
+    <div class="brand-logo">SERIGOR<span>.AI</span></div>
+    <div class="brand-subtitle">Enterprise Candidate Screening</div>
+  </div>
 
-    <!-- VIEW 1: RECRUITER FRAMEWORK -->
-    <div id="recruiter-view">
-        <h2>Configure Candidate Session</h2>
-        <label>Target Company Corporate Assignment</label>
-        <input type="text" id="comp-name" placeholder="e.g. Serigor Global Logistics">
-        
-        <label>Core Job Specifications (JD)</label>
-        <textarea id="jd-text" placeholder="Paste structural JD rules..."></textarea>
-        
-        <label>Candidate Professional Profile / Resume CV</label>
-        <textarea id="resume-text" placeholder="Paste clean extraction profile..."></textarea>
-        
-        <button onclick="generateCandidateAccess()">Generate Private Assessment Key</button>
-        
-        <div id="output-credentials" class="result-box">
-            <strong style="color: #166534;">✔ Encryption Complete</strong><br><br>
-            <strong>Secure Link:</strong> <span id="cand-link" style="color:var(--serigor-accent); font-weight:500;"></span><br><br>
-            <strong>Access Token Password:</strong> <span id="cand-pass" style="color:#B91C1C; font-family:monospace; font-size:16px; font-weight:700;"></span>
-        </div>
-    </div>
+  <!-- VIEW 1: RECRUITER FRAMEWORK -->
+  <div id="recruiter-view">
+    <h2>Configure Candidate Session</h2>
+    <label>Target Company / Corporate Assignment</label>
+    <input type="text" id="comp-name" placeholder="e.g. Serigor Global Logistics">
 
-    <!-- VIEW 2: SECURITY LOGIN GATEWAY -->
-    <div id="candidate-auth-view" class="hidden" style="text-align: center;">
-        <h2>Identity & Credentials Verification</h2>
-        <p style="color: #64748B; font-size:14px;">Enter the access token sent by your Serigor Account Executive to clear secure execution paths.</p>
-        <input type="text" id="access-password" placeholder="Format: INT-XXXXXX" style="text-align:center; max-width:320px; font-size:16px; margin: 20px 0;"><br>
-        <button onclick="verifyAndLaunch()" style="max-width:240px;">Verify Identity & Open Platform</button>
-    </div>
+    <label>Core Job Specifications (JD)</label>
+    <textarea id="jd-text" placeholder="Paste the job description..."></textarea>
 
-    <!-- VIEW 3: LIVE SCREENING APPLICATION ENVIRONMENT -->
-    <div id="interview-active-view" class="hidden" style="text-align: center;">
-        <div class="status-badge">🔴 Live Proctoring Activated</div>
-        <h2>Interview System Active</h2>
-        <p style="color: #64748B; font-size: 14px; max-width: 450px; margin: 0 auto 20px;">Your workspace interface is locked. Click the round blue call controller in the bottom right corner of the screen to interact with your reviewer panel.</p>
-        <video id="webcam-feed" autoplay playsinline muted></video>
+    <label>Candidate Professional Profile / Resume</label>
+    <textarea id="resume-text" placeholder="Paste candidate resume text..."></textarea>
+
+    <button id="generate-btn" onclick="generateCandidateAccess()">Generate Private Assessment Key</button>
+
+    <div id="generate-error" class="error-box"></div>
+
+    <div id="output-credentials" class="result-box">
+      <strong style="color: #166534;">&#10004; Session Created</strong><br><br>
+      <strong>Secure Link:</strong> <span id="cand-link" style="color:var(--serigor-accent); font-weight:500;"></span>
+      <button class="copy-btn" onclick="copyText('cand-link')">Copy</button><br><br>
+      <strong>Access Password:</strong> <span id="cand-pass" style="color:#B91C1C; font-family:monospace; font-size:16px; font-weight:700;"></span>
+      <button class="copy-btn" onclick="copyText('cand-pass')">Copy</button>
     </div>
+  </div>
+
+  <!-- VIEW 2: SECURITY LOGIN GATEWAY -->
+  <div id="candidate-auth-view" class="hidden" style="text-align: center;">
+    <h2>Identity &amp; Credentials Verification</h2>
+    <p style="color: #64748B; font-size:14px;">Enter the access password sent to you to begin your assessment.</p>
+    <input type="text" id="access-password" placeholder="Format: INT-XXXXXX" style="text-align:center; max-width:320px; font-size:16px; margin: 20px 0;"><br>
+    <button onclick="verifyAndLaunch()" style="max-width:240px;">Verify Identity &amp; Open Platform</button>
+    <div id="auth-error" class="error-box"></div>
+  </div>
+
+  <!-- VIEW 3: LIVE SCREENING APPLICATION ENVIRONMENT -->
+  <div id="interview-active-view" class="hidden" style="text-align: center;">
+    <div class="status-badge">&#128308; Live Proctoring Activated</div>
+    <h2>Interview System Active</h2>
+    <p style="color: #64748B; font-size: 14px; max-width: 450px; margin: 0 auto 20px;">
+      Your workspace is being recorded for review. Click the call icon in the bottom-right corner to begin speaking with the AI interviewer.
+    </p>
+    <video id="webcam-feed" autoplay playsinline muted></video>
+    <div id="upload-status" style="font-size:13px; color:#64748B; margin-top:10px;"></div>
+  </div>
 </div>
 
 <div id="widget-container"></div>
 
 <script>
-    // =========================================================
-    // SERIGOR CORE EMBEDDED IDENTITIES - DO NOT REMOVE
-    // =========================================================
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwrkIskGvwfYRiqRI2zF3CdQ2wA2-jjXJ0zl71TPApe52Mo1_h_K8rU8MBAF44PjtNT/exec";
-    const ELEVENLABS_AGENT_ID = "agent_2801kww0es8wfbj98vga0f606ph5";
+// =========================================================
+// SERIGOR CORE CONFIG
+// =========================================================
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwrkIskGvwfYRiqRI2zF3CdQ2wA2-jjXJ0zl71TPApe52Mo1_h_K8rU8MBAF44PjtNT/exec"; // <-- replace with YOUR /exec URL
+const ELEVENLABS_AGENT_ID = "agent_2801kww0es8wfbj98vga0f606ph5";
 
-    let sessionData = null;
-    let cheatingCounter = 0;
-    let mediaRecorder = null;
-    let recordedChunks = [];
+let sessionData = null;
+let cheatingCounter = 0;
+let mediaRecorder = null;
+let recordedChunks = [];
 
-    // // function generateCandidateAccess() {
+// ---------------------------------------------------------
+// 1. RECRUITER: GENERATE A NEW CANDIDATE SESSION
+// ---------------------------------------------------------
+function generateCandidateAccess() {
+  const company = document.getElementById("comp-name").value.trim();
+  const jd = document.getElementById("jd-text").value.trim();
+  const resume = document.getElementById("resume-text").value.trim();
+  const btn = document.getElementById("generate-btn");
+  const errBox = document.getElementById("generate-error");
+  errBox.style.display = "none";
 
-    const company = document.getElementById("comp-name").value;
-    const jd = document.getElementById("jd-text").value;
-    const resume = document.getElementById("resume-text").value;
+  if (!company || !jd || !resume) {
+    errBox.textContent = "Please fill out all fields before generating a link.";
+    errBox.style.display = "block";
+    return;
+  }
 
-    const uniqueId = Math.floor(100000 + Math.random() * 900000);
-    const generatedPassword = "INT-" + uniqueId;
+  const uniqueId = Math.floor(100000 + Math.random() * 900000);
+  const generatedPassword = "INT-" + uniqueId;
 
-    if (!company || !jd || !resume) {
-        alert("Please fill out all configuration form elements.");
-        return;
-    }
+  const payload = {
+    action: "saveSession",
+    id: uniqueId,
+    c: company,
+    j: jd,
+    r: resume,
+    p: generatedPassword
+  };
 
-    const payload = {
-        action: "saveSession",
-        id: uniqueId,
-        c: company,
-        j: jd,
-        r: resume,
-        p: generatedPassword
-    };
+  btn.disabled = true;
+  btn.textContent = "Generating...";
 
-    fetch(GOOGLE_SCRIPT_URL, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
-    })
+  fetch(GOOGLE_SCRIPT_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" }, // avoids CORS preflight with Apps Script
+    body: JSON.stringify(payload)
+  })
     .then(res => res.text())
     .then(text => {
-        const data = JSON.parse(text);
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        throw new Error("Unexpected response from server: " + text.slice(0, 200));
+      }
 
-        if (data.success) {
-
-            const shortLink =
-                window.location.origin +
-                window.location.pathname +
-                "?id=" +
-                uniqueId;
-
-            document.getElementById("cand-link").innerText = shortLink;
-            document.getElementById("cand-pass").innerText = generatedPassword;
-            document.getElementById("output-credentials").style.display = "block";
-
-        } else {
-            alert(data.error);
-        }
-
+      if (data.success) {
+        const shortLink = window.location.origin + window.location.pathname + "?id=" + uniqueId;
+        document.getElementById("cand-link").innerText = shortLink;
+        document.getElementById("cand-pass").innerText = generatedPassword;
+        document.getElementById("output-credentials").style.display = "block";
+      } else {
+        errBox.textContent = data.error || "Unknown error from server.";
+        errBox.style.display = "block";
+      }
     })
     .catch(err => {
-        console.error(err);
-        alert("Connection failed.");
+      console.error(err);
+      errBox.textContent = "Connection failed: " + err.message;
+      errBox.style.display = "block";
+    })
+    .finally(() => {
+      btn.disabled = false;
+      btn.textContent = "Generate Private Assessment Key";
     });
-
 }
-    // 2. DETECT URL REDIRECT FROM SHORT MAPS AND SEAMLESSLY MASK GITHUB
-    window.onload = function() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const id = urlParams.get('id');
 
-        if(id) {
-            document.getElementById("recruiter-view").classList.add("hidden");
-            document.getElementById("candidate-auth-view").classList.remove("hidden");
-            
-            fetch(GOOGLE_SCRIPT_URL + "?id=" + id)
-            .then(res => res.json())
-            .then(data => {
-                if(!data.error) {
-                    sessionData = data;
-                    // Strips off URL tracking flags instantly to hide structure paths from candidates
-                    const maskedURL = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '') + "/secure-session";
-                    window.history.replaceState({}, document.title, maskedURL);
-                } else {
-                    alert("This secure assessment session token has expired or is invalid.");
-                }
-            });
+function copyText(elId) {
+  const text = document.getElementById(elId).innerText;
+  navigator.clipboard.writeText(text).catch(() => {});
+}
+
+// ---------------------------------------------------------
+// 2. CANDIDATE: LOAD SESSION FROM URL ?id=
+// ---------------------------------------------------------
+window.onload = function () {
+  const urlParams = new URLSearchParams(window.location.search);
+  const id = urlParams.get('id');
+  if (id) {
+    document.getElementById("recruiter-view").classList.add("hidden");
+    document.getElementById("candidate-auth-view").classList.remove("hidden");
+
+    fetch(GOOGLE_SCRIPT_URL + "?id=" + encodeURIComponent(id))
+      .then(res => res.json())
+      .then(data => {
+        if (!data.error) {
+          sessionData = data;
+          sessionData.id = id; // keep the raw id string for later matching
+        } else {
+          document.getElementById("auth-error").textContent = "This assessment link has expired or is invalid.";
+          document.getElementById("auth-error").style.display = "block";
         }
-    };
+      })
+      .catch(() => {
+        document.getElementById("auth-error").textContent = "Could not reach the server. Please check your connection.";
+        document.getElementById("auth-error").style.display = "block";
+      });
+  }
+};
 
-    // 3. LAUNCH DEVICE INITIALIZATION MATRIX
-    function verifyAndLaunch() {
-        const entered = document.getElementById("access-password").value.trim();
-        if(!sessionData || entered !== sessionData.p) { return alert("Access credentials rejected."); }
+// ---------------------------------------------------------
+// 3. CANDIDATE: VERIFY PASSWORD, START CAMERA + RECORDING
+// ---------------------------------------------------------
+function verifyAndLaunch() {
+  const entered = document.getElementById("access-password").value.trim();
+  const errBox = document.getElementById("auth-error");
+  errBox.style.display = "none";
 
-        document.getElementById("candidate-auth-view").classList.add("hidden");
-        document.getElementById("interview-active-view").classList.remove("hidden");
+  if (!sessionData) {
+    errBox.textContent = "Session not loaded yet. Please wait a moment and try again.";
+    errBox.style.display = "block";
+    return;
+  }
+  if (entered !== sessionData.p) {
+    errBox.textContent = "Access password incorrect.";
+    errBox.style.display = "block";
+    return;
+  }
 
-        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-        .then(stream => {
-            document.getElementById("webcam-feed").srcObject = stream;
-            mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8' });
-            mediaRecorder.ondataavailable = (e) => { if(e.data.size > 0) recordedChunks.push(e.data); };
-            mediaRecorder.onstop = () => { uploadVideoAssetToDrive(); };
-            mediaRecorder.start(1000);
-            
-            initializeAssessmentWidgets();
-        });
+  document.getElementById("candidate-auth-view").classList.add("hidden");
+  document.getElementById("interview-active-view").classList.remove("hidden");
+
+  navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+    .then(stream => {
+      document.getElementById("webcam-feed").srcObject = stream;
+      mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8' });
+      mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+      mediaRecorder.onstop = () => { uploadVideoAssetToDrive(); };
+      mediaRecorder.start(1000);
+      initializeAssessmentWidgets();
+    })
+    .catch(err => {
+      errBox.textContent = "Camera/microphone access is required to begin: " + err.message;
+      errBox.style.display = "block";
+      document.getElementById("interview-active-view").classList.add("hidden");
+      document.getElementById("candidate-auth-view").classList.remove("hidden");
+    });
+}
+
+// ---------------------------------------------------------
+// 4. ATTACH ELEVENLABS WIDGET + PROCTORING LISTENERS
+// ---------------------------------------------------------
+function initializeAssessmentWidgets() {
+  document.documentElement.requestFullscreen().catch(() => {});
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      cheatingCounter++;
+      console.warn("Tab/window switch detected. Count:", cheatingCounter);
     }
+  });
+  document.addEventListener("copy", e => e.preventDefault());
+  document.addEventListener("paste", e => e.preventDefault());
+  document.addEventListener("contextmenu", e => e.preventDefault());
 
-    // 4. CALL RUNTIME WIDGET ATTACHMENTS & ACTIVATE PROCTOR LOCKS
-    function initializeAssessmentWidgets() {
-        document.documentElement.requestFullscreen().catch(() => {});
-        
-        document.addEventListener("visibilitychange", () => {
-            if (document.hidden) {
-                cheatingCounter++;
-                alert("🚨 TRACKING NOTICE: Alternate window focus displacement logged. Incident Count: " + cheatingCounter);
-            }
-        });
+  const dynamicVars = {
+    "company_info": sessionData.c,
+    "job_description": sessionData.j,
+    "candidate_resume": sessionData.r
+  };
 
-        document.addEventListener("copy", e => e.preventDefault());
-        document.addEventListener("paste", e => e.preventDefault());
+  const container = document.getElementById("widget-container");
+  const widgetEl = document.createElement("elevenlabs-convai");
+  widgetEl.setAttribute("agent-id", ELEVENLABS_AGENT_ID);
+  widgetEl.setAttribute("dynamic-variables", JSON.stringify(dynamicVars));
+  container.appendChild(widgetEl);
 
-        const dynamicVars = { "company_info": sessionData.c, "job_description": sessionData.j, "candidate_resume": sessionData.r };
-        const container = document.getElementById("widget-container");
-        const widgetEl = document.createElement("elevenlabs-convai");
-        widgetEl.setAttribute("agent-id", ELEVENLABS_AGENT_ID);
-        widgetEl.setAttribute("dynamic-variables", JSON.stringify(dynamicVars));
-        container.appendChild(widgetEl);
+  const script = document.createElement("script");
+  script.src = "https://unpkg.com/@elevenlabs/convai-widget-embed";
+  script.async = true;
+  document.body.appendChild(script);
 
-        const script = document.createElement("script");
-        script.src = "https://unpkg.com/@elevenlabs/convai-widget-embed";
-        script.async = true;
-        document.body.appendChild(script);
-        
-        window.addEventListener("message", function(event) {
-             if(event.data && event.data.type === "elevenlabs-convai-call-ended") {
-                 if(mediaRecorder && mediaRecorder.state !== "inactive") { mediaRecorder.stop(); }
-             }
-        });
+  window.addEventListener("message", function (event) {
+    if (event.data && event.data.type === "elevenlabs-convai-call-ended") {
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+      }
     }
+  });
+}
 
-    // 5. PROCESS & POST VIDEO DISPATCH STREAM DIRECTLY TO GOOGLE DRIVE STORAGE
-    function uploadVideoAssetToDrive() {
-        const blob = new Blob(recordedChunks, { type: 'video/webm' });
-        const reader = new FileReader();
-        reader.readAsDataURL(blob);
-        reader.onloadend = function() {
-            const base64Data = reader.result.split(',')[1];
-            fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                body: JSON.stringify({
-                    fileData: base64Data,
-                    filename: "Interview_" + (sessionData.c).replace(/\s+/g, '_') + "_" + Date.now() + ".webm",
-                    cheats: cheatingCounter + " Window Switches Flagged"
-                })
-            }).then(r => console.log("Video vault upload cycle completed."));
-        };
-    }
+// ---------------------------------------------------------
+// 5. UPLOAD FULL INTERVIEW RECORDING TO GOOGLE DRIVE
+// ---------------------------------------------------------
+function uploadVideoAssetToDrive() {
+  document.getElementById("upload-status").textContent = "Uploading your recording, please don't close this tab...";
+
+  const blob = new Blob(recordedChunks, { type: 'video/webm' });
+  const reader = new FileReader();
+  reader.readAsDataURL(blob);
+  reader.onloadend = function () {
+    const base64Data = reader.result.split(',')[1];
+    fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        sessionId: sessionData.id,
+        fileData: base64Data,
+        filename: "Interview_" + (sessionData.c || "candidate").replace(/\s+/g, '_') + "_" + Date.now() + ".webm",
+        cheats: cheatingCounter + " tab/window switches flagged"
+      })
+    })
+      .then(r => r.text())
+      .then(() => {
+        document.getElementById("upload-status").textContent = "Recording uploaded successfully. You may close this tab.";
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById("upload-status").textContent = "Upload failed — please keep this tab open and contact support.";
+      });
+  };
+}
 </script>
+
 </body>
 </html>
