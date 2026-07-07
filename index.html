@@ -84,7 +84,7 @@
     // =========================================================
     // SERIGOR CORE EMBEDDED IDENTITIES - DO NOT REMOVE
     // =========================================================
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyKrlD9dkS_x7ooOUD9RATDd6nCNzzFdvxK7En-ElG4v2Z0Vy6oKBftAyZJpL_uuquy/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwrkIskGvwfYRiqRI2zF3CdQ2wA2-jjXJ0zl71TPApe52Mo1_h_K8rU8MBAF44PjtNT/exec";
     const ELEVENLABS_AGENT_ID = "agent_2801kww0es8wfbj98vga0f606ph5";
 
     let sessionData = null;
@@ -92,8 +92,7 @@
     let mediaRecorder = null;
     let recordedChunks = [];
 
-    // // 1. GENERATE LINK BACKED BY APPS SCRIPT STORAGE (BYPASSES CORS BLOCKS)
-    function generateCandidateAccess() {
+    // // 1.function generateCandidateAccess() {
         const company = document.getElementById("comp-name").value;
         const jd = document.getElementById("jd-text").value;
         const resume = document.getElementById("resume-text").value;
@@ -112,12 +111,9 @@
             p: generatedPassword
         };
 
-        // Forcing Content-Type to text/plain drops the browser preflight challenge entirely
+        // Submitting as text/plain without custom properties lets Google accept the packet seamlessly
         fetch(GOOGLE_SCRIPT_URL, {
             method: "POST",
-            headers: {
-                "Content-Type": "text/plain;charset=utf-8"
-            },
             body: JSON.stringify(payload)
         })
         .then(res => res.json())
