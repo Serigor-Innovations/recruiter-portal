@@ -100,35 +100,48 @@
     let recordedChunks = [];
 
     window.onload = function() {
-        if(window.location.hash) {
-            document.getElementById("recruiter-view").classList.add("hidden");
-            document.getElementById("candidate-auth-view").classList.remove("hidden");
-            try {
-                const rawHash = window.location.hash.substring(1);
-                const decodedJson = decodeURIComponent(atob(rawHash).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
-                sessionData = JSON.parse(decodedJson);
-            } catch(e) { alert("Corrupted session tracking hash parameters."); }
-        }
-    };
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionToken = urlParams.get('session');
 
-    function generateCandidateAccess() {
-        const company = document.getElementById("comp-name").value;
-        const jd = document.getElementById("jd-text").value;
-        const resume = document.getElementById("resume-text").value;
-        const generatedPassword = "INT-" + Math.floor(100000 + Math.random() * 900000);
-
-        if(!company || !jd || !resume) { return alert("Complete all data points before encryption."); }
-
-        const payload = { c: company, j: jd, r: resume, p: generatedPassword };
-        const jsonString = JSON.stringify(payload);
-        const encodedHash = btoa(encodeURIComponent(jsonString).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
+    if(sessionToken) {
+        // Swap views instantly
+        document.getElementById("recruiter-view").classList.add("hidden");
+        document.getElementById("candidate-auth-view").classList.remove("hidden");
         
-        // This generates your baseline payload token URL link layout
-        const finalLink = window.location.origin + window.location.pathname + "#" + encodedHash;
-        document.getElementById("cand-link").innerText = finalLink;
-        document.getElementById("cand-pass").innerText = generatedPassword;
-        document.getElementById("output-credentials").style.display = "block";
+        // 1. Fetch data from browser storage memory
+        const storedData = localStorage.getItem(sessionToken);
+        if(storedData) {
+            sessionData = JSON.parse(storedData);
+        }
+        
+        // 2. NATIVE CLOAKING TRICK: Completely change the address bar look without reloading!
+        // This strips the github address and rewrites it as an enterprise app portal route
+        const maskedURL = window.location.origin + "/serigor-assessment-portal/active-secure-session";
+        window.history.replaceState({}, document.title, maskedURL);
     }
+};
+    function generateCandidateAccess() {
+    const company = document.getElementById("comp-name").value;
+    const jd = document.getElementById("jd-text").value;
+    const resume = document.getElementById("resume-text").value;
+    const generatedPassword = "INT-" + Math.floor(100000 + Math.random() * 900000);
+
+    if(!company || !jd || !resume) { return alert("Complete all data points before encryption."); }
+
+    // 1. Pack your configuration into a global object session state
+    const payload = { c: company, j: jd, r: resume, p: generatedPassword };
+    
+    // 2. Save it straight to the local browser database storage memory
+    localStorage.setItem(generatedPassword, JSON.stringify(payload));
+    
+    // 3. Create a clean corporate link template structure (No huge code strings!)
+    const cleanLink = window.location.origin + window.location.pathname + "?session=" + generatedPassword;
+
+    // Display this clean pointer to the recruiter instantly
+    document.getElementById("cand-link").innerText = cleanLink;
+    document.getElementById("cand-pass").innerText = generatedPassword;
+    document.getElementById("output-credentials").style.display = "block";
+}
 
     function verifyAndLaunch() {
         const entered = document.getElementById("access-password").value.trim();
