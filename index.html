@@ -99,28 +99,43 @@
     let mediaRecorder = null;
     let recordedChunks = [];
 
-    window.onload = function() {
+  window.onload = function() {
     const urlParams = new URLSearchParams(window.location.search);
-    const sessionToken = urlParams.get('session');
+    const token = urlParams.get('token');
 
-    if(sessionToken) {
-        // Swap views instantly
-        document.getElementById("recruiter-view").classList.add("hidden");
-        document.getElementById("candidate-auth-view").classList.remove("hidden");
-        
-        // 1. Fetch data from browser storage memory
-        const storedData = localStorage.getItem(sessionToken);
-        if(storedData) {
-            sessionData = JSON.parse(storedData);
+    if(token) {
+        try {
+            // 1. Decode the incoming data stream seamlessly on the candidate's machine
+            const decodedJson = decodeURIComponent(atob(token).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+            sessionData = JSON.parse(decodedJson);
+            
+            // Store it temporarily in session memory so the password check works
+            sessionStorage.setItem("active_session", decodedJson);
+
+            // Swap views instantly to the login gate
+            document.getElementById("recruiter-view").classList.add("hidden");
+            document.getElementById("candidate-auth-view").classList.remove("hidden");
+            
+            // 2. THE CLOAKING TRICK: Completely change the address bar look without reloading!
+            // This strips the token and GitHub file paths, rewriting it to look like a premium corporate portal
+            const maskedURL = window.location.origin + "/serigor-assessment-portal/secure-session-active";
+            window.history.replaceState({}, document.title, maskedURL);
+            
+        } catch(e) { 
+            alert("Corrupted session tracking parameters."); 
         }
-        
-        // 2. NATIVE CLOAKING TRICK: Completely change the address bar look without reloading!
-        // This strips the github address and rewrites it as an enterprise app portal route
-        const maskedURL = window.location.origin + "/serigor-assessment-portal/active-secure-session";
-        window.history.replaceState({}, document.title, maskedURL);
+    } else {
+        // If they refresh the page after entering, check if session data is still in temporary memory
+        const backupData = sessionStorage.getItem("active_session");
+        if(backupData) {
+            sessionData = JSON.parse(backupData);
+            document.getElementById("recruiter-view").classList.add("hidden");
+            document.getElementById("candidate-auth-view").classList.remove("hidden");
+        }
     }
 };
-    function generateCandidateAccess() {
+    
+function generateCandidateAccess() {
     const company = document.getElementById("comp-name").value;
     const jd = document.getElementById("jd-text").value;
     const resume = document.getElementById("resume-text").value;
@@ -128,27 +143,33 @@
 
     if(!company || !jd || !resume) { return alert("Complete all data points before encryption."); }
 
-    // 1. Pack your configuration into a global object session state
+    // 1. Pack your configuration into a compact payload
     const payload = { c: company, j: jd, r: resume, p: generatedPassword };
+    const jsonString = JSON.stringify(payload);
     
-    // 2. Save it straight to the local browser database storage memory
-    localStorage.setItem(generatedPassword, JSON.stringify(payload));
+    // 2. Encode it cleanly to survive line breaks and special characters
+    const encodedData = btoa(encodeURIComponent(jsonString).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
     
-    // 3. Create a clean corporate link template structure (No huge code strings!)
-    const cleanLink = window.location.origin + window.location.pathname + "?session=" + generatedPassword;
+    // 3. Build the link passing the data directly so any computer can read it
+    const cleanLink = window.location.origin + window.location.pathname + "?token=" + encodedData;
 
-    // Display this clean pointer to the recruiter instantly
+    // Display this pointer to the recruiter instantly
     document.getElementById("cand-link").innerText = cleanLink;
     document.getElementById("cand-pass").innerText = generatedPassword;
     document.getElementById("output-credentials").style.display = "block";
 }
-
     function verifyAndLaunch() {
-        const entered = document.getElementById("access-password").value.trim();
-        if(!sessionData || entered !== sessionData.p) { return alert("Invalid entry token key."); }
+    const entered = document.getElementById("access-password").value.trim();
+    
+    // Check if data exists and password matches perfectly
+    if(!sessionData || entered !== sessionData.p) { 
+        return alert("Invalid entry token key. Please check your password."); 
+    }
 
-        document.getElementById("candidate-auth-view").classList.add("hidden");
-        document.getElementById("interview-active-view").classList.remove("hidden");
+    document.getElementById("candidate-auth-view").classList.add("hidden");
+    document.getElementById("interview-active-view").classList.remove("hidden");
+
+    // ... (rest of your webcam and ElevenLabs setup code below)
 
         // Request audio/video track constraints
         navigator.mediaDevices.getUserMedia({ video: true, audio: true })
