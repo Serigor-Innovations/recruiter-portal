@@ -81,9 +81,9 @@
 <div id="widget-container"></div>
 
 <script>
-    // ==========================================
-    // CONFIGURATION VARIABLES (PASTE LINKS HERE)
-    // ==========================================
+    // =========================================================
+    // SERIGOR CORE EMBEDDED IDENTITIES - DO NOT REMOVE
+    // =========================================================
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxo59UvL9CEr5j94uFrcTtLVAsBD-s8ik5-8aZfbNGTQCG3bhGdtraiTWRqoOXIVgVc/exec";
     const ELEVENLABS_AGENT_ID = "agent_2801kww0es8wfbj98vga0f606ph5";
 
@@ -92,7 +92,7 @@
     let mediaRecorder = null;
     let recordedChunks = [];
 
-    // 1. GENERATE CLEAN SHORT URL WITHOUT GITHUB LENGTH EXPOSURE
+    // 1. GENERATE LINK BACKED BY APPS SCRIPT STORAGE
     function generateCandidateAccess() {
         const company = document.getElementById("comp-name").value;
         const jd = document.getElementById("jd-text").value;
@@ -101,7 +101,7 @@
         const uniqueId = Math.floor(100000 + Math.random() * 900000);
         const generatedPassword = "INT-" + uniqueId;
 
-        if(!company || !jd || !resume) { return alert("Please fill out all fields."); }
+        if(!company || !jd || !resume) { return alert("Please fill out all configuration form elements."); }
 
         const payload = {
             action: "saveSession",
@@ -122,10 +122,10 @@
             document.getElementById("cand-pass").innerText = generatedPassword;
             document.getElementById("output-credentials").style.display = "block";
         })
-        .catch(() => alert("Error communicating with central cloud storage."));
+        .catch(() => alert("Error syncing data configurations with Google Cloud."));
     }
 
-    // 2. PARSE THE SHORT LINK ON CANDIDATE COMPUTER & MASK URL
+    // 2. DETECT URL REDIRECT FROM SHORT MAPS AND SEAMLESSLY MASK GITHUB
     window.onload = function() {
         const urlParams = new URLSearchParams(window.location.search);
         const id = urlParams.get('id');
@@ -139,19 +139,20 @@
             .then(data => {
                 if(!data.error) {
                     sessionData = data;
-                    const maskedURL = window.location.origin + "/serigor-assessment/secure-session";
+                    // Strips off URL tracking flags instantly to hide structure paths from candidates
+                    const maskedURL = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '') + "/secure-session";
                     window.history.replaceState({}, document.title, maskedURL);
                 } else {
-                    alert("This interview session has expired or is invalid.");
+                    alert("This secure assessment session token has expired or is invalid.");
                 }
             });
         }
     };
 
-    // 3. SECURE PASS KEY UNLOCK TRIGGER & START MONITORING
+    // 3. LAUNCH DEVICE INITIALIZATION MATRIX
     function verifyAndLaunch() {
         const entered = document.getElementById("access-password").value.trim();
-        if(!sessionData || entered !== sessionData.p) { return alert("Incorrect password credentials."); }
+        if(!sessionData || entered !== sessionData.p) { return alert("Access credentials rejected."); }
 
         document.getElementById("candidate-auth-view").classList.add("hidden");
         document.getElementById("interview-active-view").classList.remove("hidden");
@@ -168,13 +169,14 @@
         });
     }
 
+    // 4. CALL RUNTIME WIDGET ATTACHMENTS & ACTIVATE PROCTOR LOCKS
     function initializeAssessmentWidgets() {
         document.documentElement.requestFullscreen().catch(() => {});
         
         document.addEventListener("visibilitychange", () => {
             if (document.hidden) {
                 cheatingCounter++;
-                alert("🚨 SECURITY NOTICE: Tab displacement logged by Serigor. Incident counts: " + cheatingCounter);
+                alert("🚨 TRACKING NOTICE: Alternate window focus displacement logged. Incident Count: " + cheatingCounter);
             }
         });
 
@@ -200,6 +202,7 @@
         });
     }
 
+    // 5. PROCESS & POST VIDEO DISPATCH STREAM DIRECTLY TO GOOGLE DRIVE STORAGE
     function uploadVideoAssetToDrive() {
         const blob = new Blob(recordedChunks, { type: 'video/webm' });
         const reader = new FileReader();
@@ -211,9 +214,9 @@
                 body: JSON.stringify({
                     fileData: base64Data,
                     filename: "Interview_" + (sessionData.c).replace(/\s+/g, '_') + "_" + Date.now() + ".webm",
-                    cheats: cheatingCounter + " Switches"
+                    cheats: cheatingCounter + " Window Switches Flagged"
                 })
-            }).then(r => console.log("Video uploaded successfully."));
+            }).then(r => console.log("Video vault upload cycle completed."));
         };
     }
 </script>
