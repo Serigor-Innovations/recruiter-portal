@@ -84,7 +84,7 @@
     // =========================================================
     // SERIGOR CORE EMBEDDED IDENTITIES - DO NOT REMOVE
     // =========================================================
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxo59UvL9CEr5j94uFrcTtLVAsBD-s8ik5-8aZfbNGTQCG3bhGdtraiTWRqoOXIVgVc/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyKrlD9dkS_x7ooOUD9RATDd6nCNzzFdvxK7En-ElG4v2Z0Vy6oKBftAyZJpL_uuquy/exec";
     const ELEVENLABS_AGENT_ID = "agent_2801kww0es8wfbj98vga0f606ph5";
 
     let sessionData = null;
@@ -92,7 +92,7 @@
     let mediaRecorder = null;
     let recordedChunks = [];
 
-    // 1. GENERATE LINK BACKED BY APPS SCRIPT STORAGE
+    // // 1. GENERATE LINK BACKED BY APPS SCRIPT STORAGE (BYPASSES CORS BLOCKS)
     function generateCandidateAccess() {
         const company = document.getElementById("comp-name").value;
         const jd = document.getElementById("jd-text").value;
@@ -112,19 +112,30 @@
             p: generatedPassword
         };
 
+        // Forcing Content-Type to text/plain drops the browser preflight challenge entirely
         fetch(GOOGLE_SCRIPT_URL, {
             method: "POST",
+            headers: {
+                "Content-Type": "text/plain;charset=utf-8"
+            },
             body: JSON.stringify(payload)
         })
-        .then(() => {
-            const shortLink = window.location.origin + window.location.pathname + "?id=" + uniqueId;
-            document.getElementById("cand-link").innerText = shortLink;
-            document.getElementById("cand-pass").innerText = generatedPassword;
-            document.getElementById("output-credentials").style.display = "block";
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                const shortLink = window.location.origin + window.location.pathname + "?id=" + uniqueId;
+                document.getElementById("cand-link").innerText = shortLink;
+                document.getElementById("cand-pass").innerText = generatedPassword;
+                document.getElementById("output-credentials").style.display = "block";
+            } else {
+                alert("Database Engine Error: " + data.error);
+            }
         })
-        .catch(() => alert("Error syncing data configurations with Google Cloud."));
+        .catch(err => {
+            console.error(err);
+            alert("Connection error occurred when communicating with Google Cloud.");
+        });
     }
-
     // 2. DETECT URL REDIRECT FROM SHORT MAPS AND SEAMLESSLY MASK GITHUB
     window.onload = function() {
         const urlParams = new URLSearchParams(window.location.search);
