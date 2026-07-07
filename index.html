@@ -5,38 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Serigor AI Assessment Platform</title>
     <style>
-        /* SERIGOR BRAND COLOR PALETTE CONFIGURATION */
         :root {
-            --serigor-primary: #0F172A;   /* Deep Corporate Slate/Navy Blue */
-            --serigor-accent: #2563EB;    /* Vibrant Professional Blue */
+            --serigor-primary: #0F172A;   
+            --serigor-accent: #2563EB;    
             --serigor-accent-hover: #1D4ED8;
-            --serigor-bg: #F8FAFC;        /* Clean Pearl/Light Gray Background */
+            --serigor-bg: #F8FAFC;        
             --serigor-text: #334155;
             --serigor-card-bg: #FFFFFF;
         }
-
         body { font-family: 'Inter', system-ui, sans-serif; background-color: var(--serigor-bg); margin: 0; padding: 40px; display: flex; justify-content: center; color: var(--serigor-text); }
         .container { background: var(--serigor-card-bg); padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); width: 100%; max-width: 650px; border-top: 5px solid var(--serigor-accent); }
-        
-        /* BRAND LOGO HEADER COMPONENT */
         .brand-header { text-align: center; margin-bottom: 30px; }
         .brand-logo { font-size: 28px; font-weight: 800; color: var(--serigor-primary); letter-spacing: -0.5px; }
         .brand-logo span { color: var(--serigor-accent); }
         .brand-subtitle { font-size: 14px; color: #64748B; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px; }
-
         h2 { color: var(--serigor-primary); margin-top: 0; font-size: 22px; text-align: center; }
         label { font-weight: 600; display: block; margin: 20px 0 6px; color: var(--serigor-primary); font-size: 14px; }
         input, textarea { width: 100%; padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px; box-sizing: border-box; font-size: 14px; background: #F8FAFC; transition: 0.2s; }
         input:focus, textarea:focus { outline: none; border-color: var(--serigor-accent); background: #FFF; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
         textarea { height: 110px; resize: vertical; }
-        
         button { background: var(--serigor-accent); color: white; border: none; padding: 14px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 24px; font-size: 15px; transition: 0.2s; }
         button:hover { background: var(--serigor-accent-hover); }
-        
         .result-box { background: #F0FDF4; border: 1px solid #BBF7D0; padding: 20px; border-radius: 8px; margin-top: 25px; word-break: break-all; display: none; }
         .hidden { display: none !important; }
-        
-        /* CAMERA LAYOUT MODAL */
         #webcam-feed { width: 240px; height: 180px; border-radius: 12px; border: 4px solid var(--serigor-accent); background: #000; margin: 20px auto; display: block; transform: scaleX(-1); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         .status-badge { display: inline-block; padding: 6px 12px; background: #FEE2E2; color: #EF4444; border-radius: 20px; font-size: 12px; font-weight: 700; margin-bottom: 15px; text-transform: uppercase; }
     </style>
@@ -44,7 +35,6 @@
 <body>
 
 <div class="container">
-    <!-- SERIGOR INTEGRATED BRAND IDENTITY -->
     <div class="brand-header">
         <div class="brand-logo">SERIGOR<span>.AI</span></div>
         <div class="brand-subtitle">Enterprise Candidate Screening</div>
@@ -91,104 +81,90 @@
 <div id="widget-container"></div>
 
 <script>
-    const ELEVENLABS_AGENT_ID = "agent_6301kwwenbw1ffmvbk1m2rf63wqh"; // Paste your ID string here!
-    const GOOGLE_SCRIPT_STREAM_URL = "https://script.google.com/macros/s/AKfycbyG-EjXsKBGPKMIZeLOqTEttPa_FnVf5Kq-PkleAQRWdkxbfg7USR-8YI5FA1_xlclS/exec"; // Paste your new Apps Script link here!
-    
+    // ==========================================
+    // CONFIGURATION VARIABLES (PASTE LINKS HERE)
+    // ==========================================
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxo59UvL9CEr5j94uFrcTtLVAsBD-s8ik5-8aZfbNGTQCG3bhGdtraiTWRqoOXIVgVc/exec";
+    const ELEVENLABS_AGENT_ID = "agent_6301kwwenbw1ffmvbk1m2rf63wqh";
+
     let sessionData = null;
     let cheatingCounter = 0;
     let mediaRecorder = null;
     let recordedChunks = [];
 
-  window.onload = function() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
+    // 1. GENERATE CLEAN SHORT URL WITHOUT GITHUB LENGTH EXPOSURE
+    function generateCandidateAccess() {
+        const company = document.getElementById("comp-name").value;
+        const jd = document.getElementById("jd-text").value;
+        const resume = document.getElementById("resume-text").value;
+        
+        const uniqueId = Math.floor(100000 + Math.random() * 900000);
+        const generatedPassword = "INT-" + uniqueId;
 
-    if(token) {
-        try {
-            // 1. Decode the incoming data stream seamlessly on the candidate's machine
-            const decodedJson = decodeURIComponent(atob(token).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
-            sessionData = JSON.parse(decodedJson);
-            
-            // Store it temporarily in session memory so the password check works
-            sessionStorage.setItem("active_session", decodedJson);
+        if(!company || !jd || !resume) { return alert("Please fill out all fields."); }
 
-            // Swap views instantly to the login gate
-            document.getElementById("recruiter-view").classList.add("hidden");
-            document.getElementById("candidate-auth-view").classList.remove("hidden");
-            
-            // 2. THE CLOAKING TRICK: Completely change the address bar look without reloading!
-            // This strips the token and GitHub file paths, rewriting it to look like a premium corporate portal
-            const maskedURL = window.location.origin + "/serigor-assessment-portal/secure-session-active";
-            window.history.replaceState({}, document.title, maskedURL);
-            
-        } catch(e) { 
-            alert("Corrupted session tracking parameters."); 
-        }
-    } else {
-        // If they refresh the page after entering, check if session data is still in temporary memory
-        const backupData = sessionStorage.getItem("active_session");
-        if(backupData) {
-            sessionData = JSON.parse(backupData);
-            document.getElementById("recruiter-view").classList.add("hidden");
-            document.getElementById("candidate-auth-view").classList.remove("hidden");
-        }
+        const payload = {
+            action: "saveSession",
+            id: uniqueId,
+            c: company,
+            j: jd,
+            r: resume,
+            p: generatedPassword
+        };
+
+        fetch(GOOGLE_SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify(payload)
+        })
+        .then(() => {
+            const shortLink = window.location.origin + window.location.pathname + "?id=" + uniqueId;
+            document.getElementById("cand-link").innerText = shortLink;
+            document.getElementById("cand-pass").innerText = generatedPassword;
+            document.getElementById("output-credentials").style.display = "block";
+        })
+        .catch(() => alert("Error communicating with central cloud storage."));
     }
-};
-    
-function generateCandidateAccess() {
-    const company = document.getElementById("comp-name").value;
-    const jd = document.getElementById("jd-text").value;
-    const resume = document.getElementById("resume-text").value;
-    const generatedPassword = "INT-" + Math.floor(100000 + Math.random() * 900000);
 
-    if(!company || !jd || !resume) { return alert("Complete all data points before encryption."); }
+    // 2. PARSE THE SHORT LINK ON CANDIDATE COMPUTER & MASK URL
+    window.onload = function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const id = urlParams.get('id');
 
-    // 1. Pack your configuration into a compact payload
-    const payload = { c: company, j: jd, r: resume, p: generatedPassword };
-    const jsonString = JSON.stringify(payload);
-    
-    // 2. Encode it cleanly to survive line breaks and special characters
-    const encodedData = btoa(encodeURIComponent(jsonString).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
-    
-    // 3. Build the link passing the data directly so any computer can read it
-    const cleanLink = window.location.origin + window.location.pathname + "?token=" + encodedData;
+        if(id) {
+            document.getElementById("recruiter-view").classList.add("hidden");
+            document.getElementById("candidate-auth-view").classList.remove("hidden");
+            
+            fetch(GOOGLE_SCRIPT_URL + "?id=" + id)
+            .then(res => res.json())
+            .then(data => {
+                if(!data.error) {
+                    sessionData = data;
+                    const maskedURL = window.location.origin + "/serigor-assessment/secure-session";
+                    window.history.replaceState({}, document.title, maskedURL);
+                } else {
+                    alert("This interview session has expired or is invalid.");
+                }
+            });
+        }
+    };
 
-    // Display this pointer to the recruiter instantly
-    document.getElementById("cand-link").innerText = cleanLink;
-    document.getElementById("cand-pass").innerText = generatedPassword;
-    document.getElementById("output-credentials").style.display = "block";
-}
+    // 3. SECURE PASS KEY UNLOCK TRIGGER & START MONITORING
     function verifyAndLaunch() {
-    const entered = document.getElementById("access-password").value.trim();
-    
-    // Check if data exists and password matches perfectly
-    if(!sessionData || entered !== sessionData.p) { 
-        return alert("Invalid entry token key. Please check your password."); 
-    }
+        const entered = document.getElementById("access-password").value.trim();
+        if(!sessionData || entered !== sessionData.p) { return alert("Incorrect password credentials."); }
 
-    document.getElementById("candidate-auth-view").classList.add("hidden");
-    document.getElementById("interview-active-view").classList.remove("hidden");
+        document.getElementById("candidate-auth-view").classList.add("hidden");
+        document.getElementById("interview-active-view").classList.remove("hidden");
 
-    // ... (rest of your webcam and ElevenLabs setup code below)
-
-        // Request audio/video track constraints
         navigator.mediaDevices.getUserMedia({ video: true, audio: true })
         .then(stream => {
             document.getElementById("webcam-feed").srcObject = stream;
-            
-            // INTIALIZE CAMERA RECORDER COMPONENT
             mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8' });
             mediaRecorder.ondataavailable = (e) => { if(e.data.size > 0) recordedChunks.push(e.data); };
-            
-            // When the evaluation completes, transmit the generated recording binary to Google Drive
             mediaRecorder.onstop = () => { uploadVideoAssetToDrive(); };
-            mediaRecorder.start(1000); // Record chunks in 1-second frames
+            mediaRecorder.start(1000);
             
             initializeAssessmentWidgets();
-        })
-        .catch(() => {
-            alert("Camera framework validation required for Serigor compliance rules.");
-            window.location.reload();
         });
     }
 
@@ -217,7 +193,6 @@ function generateCandidateAccess() {
         script.async = true;
         document.body.appendChild(script);
         
-        // Listen to standard widget disconnection states to stop processing loops safely
         window.addEventListener("message", function(event) {
              if(event.data && event.data.type === "elevenlabs-convai-call-ended") {
                  if(mediaRecorder && mediaRecorder.state !== "inactive") { mediaRecorder.stop(); }
@@ -231,14 +206,14 @@ function generateCandidateAccess() {
         reader.readAsDataURL(blob);
         reader.onloadend = function() {
             const base64Data = reader.result.split(',')[1];
-            fetch(GOOGLE_SCRIPT_STREAM_URL, {
+            fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
                 body: JSON.stringify({
                     fileData: base64Data,
                     filename: "Interview_" + (sessionData.c).replace(/\s+/g, '_') + "_" + Date.now() + ".webm",
                     cheats: cheatingCounter + " Switches"
                 })
-            }).then(r => console.log("Video telemetry uploaded successfully."));
+            }).then(r => console.log("Video uploaded successfully."));
         };
     }
 </script>
