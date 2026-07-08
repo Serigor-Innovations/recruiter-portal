@@ -28,7 +28,7 @@
     border-radius: 16px;
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
     width: 100%;
-    max-width: 650px;
+    max-width: 700px;
     border-top: 5px solid var(--serigor-accent);
   }
   .brand-header { text-align: center; margin-bottom: 30px; }
@@ -46,12 +46,14 @@
     outline: none; border-color: var(--serigor-accent); background: #FFF;
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
   }
-  textarea { height: 110px; resize: vertical; }
+  textarea { height: 100px; resize: vertical; }
   button {
     background: var(--serigor-accent); color: white; border: none; padding: 14px 20px;
     border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 24px;
     font-size: 15px; transition: 0.2s;
   }
+  button.secondary { background: #64748B; }
+  button.secondary:hover:not(:disabled) { background: #475569; }
   button:disabled { opacity: 0.6; cursor: not-allowed; }
   button:hover:not(:disabled) { background: var(--serigor-accent-hover); }
   .result-box {
@@ -62,6 +64,7 @@
     background: #FEF2F2; border: 1px solid #FECACA; color: #B91C1C; padding: 14px 16px;
     border-radius: 8px; margin-top: 16px; font-size: 14px; display: none;
   }
+  .hint { font-size: 12px; color: #94A3B8; margin-top: 4px; }
   .hidden { display: none !important; }
   #webcam-feed {
     width: 240px; height: 180px; border-radius: 12px; border: 4px solid var(--serigor-accent);
@@ -73,10 +76,18 @@
     border-radius: 20px; font-size: 12px; font-weight: 700; margin-bottom: 15px;
     text-transform: uppercase;
   }
-  .copy-btn {
-    display: inline-block; margin-top: 4px; margin-left: 8px; padding: 2px 10px;
-    font-size: 12px; width: auto; margin-top: 0; vertical-align: middle;
+  .copy-btn { display: inline-block; width: auto; margin: 0 0 0 8px; padding: 2px 10px; font-size: 12px; }
+  .question-row {
+    display: flex; align-items: center; gap: 10px; background: #F8FAFC; border: 1px solid #E2E8F0;
+    border-radius: 8px; padding: 10px 12px; margin-bottom: 8px;
   }
+  .question-row input[type="text"] { border: none; background: transparent; padding: 4px; margin: 0; }
+  .question-row button {
+    width: auto; margin: 0; padding: 4px 10px; background: #FEE2E2; color: #B91C1C; font-size: 12px;
+  }
+  .question-row button:hover { background: #FECACA; }
+  .rules-list { text-align: left; max-width: 480px; margin: 20px auto; font-size: 14px; line-height: 1.9; color: #334155; }
+  .rules-list li { margin-bottom: 6px; }
 </style>
 </head>
 <body>
@@ -87,20 +98,47 @@
     <div class="brand-subtitle">Enterprise Candidate Screening</div>
   </div>
 
-  <!-- VIEW 1: RECRUITER FRAMEWORK -->
+  <!-- STEP 1: RECRUITER FILLS ROLE DETAILS -->
   <div id="recruiter-view">
     <h2>Configure Candidate Session</h2>
-    <label>Target Company / Corporate Assignment</label>
+
+    <label>Your Email (for completion notifications)</label>
+    <input type="email" id="recruiter-email" placeholder="you@serigor.com">
+
+    <label>Target Company</label>
     <input type="text" id="comp-name" placeholder="e.g. Serigor Global Logistics">
+
+    <label>Client Industry</label>
+    <input type="text" id="client-industry" placeholder="e.g. Logistics & Supply Chain">
+
+    <label>Client Details (optional)</label>
+    <textarea id="client-details" placeholder="Anything about the client's culture, priorities, or context worth the AI knowing..."></textarea>
 
     <label>Core Job Specifications (JD)</label>
     <textarea id="jd-text" placeholder="Paste the job description..."></textarea>
 
-    <label>Candidate Professional Profile / Resume</label>
+    <label>Candidate Resume</label>
     <textarea id="resume-text" placeholder="Paste candidate resume text..."></textarea>
 
-    <button id="generate-btn" onclick="generateCandidateAccess()">Generate Private Assessment Key</button>
+    <button id="suggest-btn" onclick="goToQuestionReview()">Suggest Interview Questions &rarr;</button>
+    <div id="step1-error" class="error-box"></div>
+  </div>
 
+  <!-- STEP 2: RECRUITER REVIEWS / EDITS QUESTIONS -->
+  <div id="question-review-view" class="hidden">
+    <h2>Review Interview Questions</h2>
+    <p style="font-size:13px; color:#64748B; text-align:center;">
+      These are starter questions generated from the JD and resume — not from a separate AI call.
+      Add, remove, or edit anything before generating the candidate link. The AI interviewer will
+      use this exact list as its guide.
+    </p>
+    <div id="questions-container"></div>
+    <div class="question-row" style="background:#EFF6FF; border-style:dashed;">
+      <input type="text" id="new-question-input" placeholder="Type a new question and press Add">
+      <button onclick="addQuestion()" style="background:#DBEAFE; color:#1D4ED8;">Add</button>
+    </div>
+    <button onclick="generateCandidateAccess()" id="generate-btn">Generate Private Assessment Key</button>
+    <button class="secondary" onclick="backToStep1()">&larr; Back to Edit Details</button>
     <div id="generate-error" class="error-box"></div>
 
     <div id="output-credentials" class="result-box">
@@ -112,7 +150,7 @@
     </div>
   </div>
 
-  <!-- VIEW 2: SECURITY LOGIN GATEWAY -->
+  <!-- CANDIDATE STEP A: PASSWORD + CONSENT -->
   <div id="candidate-auth-view" class="hidden" style="text-align: center;">
     <h2>Identity &amp; Credentials Verification</h2>
     <p style="color: #64748B; font-size:14px;">Enter the access password sent to you to begin your assessment.</p>
@@ -121,16 +159,32 @@
       <input type="checkbox" id="consent-checkbox" style="width:auto; margin-top:2px;">
       I consent to this session recording my webcam, microphone, and screen activity, and to that recording and activity log being shared with the hiring company.
     </label>
-    <button id="verify-btn" onclick="verifyAndLaunch()" style="max-width:240px;" disabled>Loading session...</button>
+    <button id="verify-btn" onclick="verifyAndProceed()" style="max-width:240px;" disabled>Loading session...</button>
     <div id="auth-error" class="error-box"></div>
   </div>
 
-  <!-- VIEW 3: LIVE SCREENING APPLICATION ENVIRONMENT -->
+  <!-- CANDIDATE STEP B: DO'S AND DON'TS -->
+  <div id="rules-view" class="hidden">
+    <h2>Before You Begin</h2>
+    <ul class="rules-list">
+      <li>Answer honestly — if you don't know something, simply say so. That's a completely fine answer.</li>
+      <li>Ground your answers in real examples from your own experience, not textbook definitions.</li>
+      <li>Keep answers short and to the point — real specifics beat long explanations.</li>
+      <li>Don't switch tabs or leave this window — your activity is being monitored and logged.</li>
+      <li>Sit in a well-lit space, facing your camera, so you're clearly visible throughout.</li>
+      <li>Don't use AI tools, browser extensions, or a second device during this assessment.</li>
+      <li>This session is video and audio recorded and proctored end to end.</li>
+      <li>Repeated flagged activity will be visibly logged and shared with the hiring team.</li>
+    </ul>
+    <button onclick="launchInterviewEnvironment()">I Understand — Start Interview</button>
+  </div>
+
+  <!-- CANDIDATE STEP C: LIVE INTERVIEW -->
   <div id="interview-active-view" class="hidden" style="text-align: center;">
     <div class="status-badge">&#128308; Live Proctoring Activated</div>
     <h2>Interview System Active</h2>
     <p style="color: #64748B; font-size: 14px; max-width: 450px; margin: 0 auto 20px;">
-      Your workspace is being recorded for review. Click the call icon in the bottom-right corner to begin speaking with the AI interviewer. Do not switch tabs, exit fullscreen, or leave the camera frame — these actions are logged.
+      Click the call icon in the bottom-right corner to begin speaking with the AI interviewer.
     </p>
     <video id="webcam-feed" autoplay playsinline muted></video>
     <div id="warning-banner" class="hidden" style="background:#FEF3C7; border:1px solid #FCD34D; color:#92400E; padding:12px 16px; border-radius:8px; margin:0 auto 16px; max-width:450px; font-weight:600; font-size:14px;"></div>
@@ -143,29 +197,99 @@
 
 <script>
 // =========================================================
-// SERIGOR CORE CONFIG
+// CONFIG
 // =========================================================
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwrkIskGvwfYRiqRI2zF3CdQ2wA2-jjXJ0zl71TPApe52Mo1_h_K8rU8MBAF44PjtNT/exec"; // <-- replace with YOUR /exec URL
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwrkIskGvwfYRiqRI2zF3CdQ2wA2-jjXJ0zl71TPApe52Mo1_h_K8rU8MBAF44PjtNT/exec"; // <-- your current /exec URL
 const ELEVENLABS_AGENT_ID = "agent_2801kww0es8wfbj98vga0f606ph5";
 
 let sessionData = null;
 let cheatingCounter = 0;
 let mediaRecorder = null;
 let recordedChunks = [];
+let questionList = [];
 
 // ---------------------------------------------------------
-// 1. RECRUITER: GENERATE A NEW CANDIDATE SESSION
+// STEP 1 -> STEP 2: BUILD STARTER QUESTIONS FROM JD/RESUME
+// (Template-based, not a real AI call — fully editable after.)
+// ---------------------------------------------------------
+function goToQuestionReview() {
+  const company = document.getElementById("comp-name").value.trim();
+  const jd = document.getElementById("jd-text").value.trim();
+  const resume = document.getElementById("resume-text").value.trim();
+  const errBox = document.getElementById("step1-error");
+  errBox.style.display = "none";
+
+  if (!company || !jd || !resume) {
+    errBox.textContent = "Please fill in company, JD, and resume before continuing.";
+    errBox.style.display = "block";
+    return;
+  }
+
+  questionList = [
+    "Walk me through your most relevant experience for this role.",
+    "Tell me about a specific project where you had to solve a difficult technical or operational problem.",
+    "What part of this job description matches something you've directly done before?",
+    "Describe a time you disagreed with a teammate or manager and how you handled it.",
+    "What's something in your resume you'd want to go deeper on?",
+    "Why are you interested in this particular role at " + company + "?"
+  ];
+
+  renderQuestions();
+  document.getElementById("recruiter-view").classList.add("hidden");
+  document.getElementById("question-review-view").classList.remove("hidden");
+}
+
+function backToStep1() {
+  document.getElementById("question-review-view").classList.add("hidden");
+  document.getElementById("recruiter-view").classList.remove("hidden");
+}
+
+function renderQuestions() {
+  const container = document.getElementById("questions-container");
+  container.innerHTML = "";
+  questionList.forEach((q, idx) => {
+    const row = document.createElement("div");
+    row.className = "question-row";
+    row.innerHTML =
+      '<input type="text" value="' + q.replace(/"/g, '&quot;') + '" onchange="updateQuestion(' + idx + ', this.value)" style="flex:1;">' +
+      '<button onclick="removeQuestion(' + idx + ')">Remove</button>';
+    container.appendChild(row);
+  });
+}
+
+function updateQuestion(idx, value) { questionList[idx] = value; }
+function removeQuestion(idx) { questionList.splice(idx, 1); renderQuestions(); }
+function addQuestion() {
+  const input = document.getElementById("new-question-input");
+  const val = input.value.trim();
+  if (val) {
+    questionList.push(val);
+    input.value = "";
+    renderQuestions();
+  }
+}
+
+// ---------------------------------------------------------
+// STEP 2: GENERATE THE SESSION
 // ---------------------------------------------------------
 function generateCandidateAccess() {
+  const recruiterEmail = document.getElementById("recruiter-email").value.trim();
   const company = document.getElementById("comp-name").value.trim();
+  const industry = document.getElementById("client-industry").value.trim();
+  const clientDetails = document.getElementById("client-details").value.trim();
   const jd = document.getElementById("jd-text").value.trim();
   const resume = document.getElementById("resume-text").value.trim();
   const btn = document.getElementById("generate-btn");
   const errBox = document.getElementById("generate-error");
   errBox.style.display = "none";
 
-  if (!company || !jd || !resume) {
-    errBox.textContent = "Please fill out all fields before generating a link.";
+  if (!recruiterEmail) {
+    errBox.textContent = "Please enter your email so you can be notified when the candidate finishes.";
+    errBox.style.display = "block";
+    return;
+  }
+  if (questionList.length === 0) {
+    errBox.textContent = "Add at least one interview question before generating a link.";
     errBox.style.display = "block";
     return;
   }
@@ -179,7 +303,11 @@ function generateCandidateAccess() {
     c: company,
     j: jd,
     r: resume,
-    p: generatedPassword
+    p: generatedPassword,
+    industry: industry,
+    clientDetails: clientDetails,
+    recruiterEmail: recruiterEmail,
+    questions: questionList.join("\n")
   };
 
   btn.disabled = true;
@@ -187,17 +315,14 @@ function generateCandidateAccess() {
 
   fetch(GOOGLE_SCRIPT_URL, {
     method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" }, // avoids CORS preflight with Apps Script
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify(payload)
   })
     .then(res => res.text())
     .then(text => {
       let data;
-      try {
-        data = JSON.parse(text);
-      } catch (e) {
-        throw new Error("Unexpected response from server: " + text.slice(0, 200));
-      }
+      try { data = JSON.parse(text); }
+      catch (e) { throw new Error("Unexpected response from server: " + text.slice(0, 200)); }
 
       if (data.success) {
         const shortLink = window.location.origin + window.location.pathname + "?id=" + uniqueId;
@@ -226,7 +351,7 @@ function copyText(elId) {
 }
 
 // ---------------------------------------------------------
-// 2. CANDIDATE: LOAD SESSION FROM URL ?id=
+// CANDIDATE: LOAD SESSION FROM URL ?id=
 // ---------------------------------------------------------
 window.onload = function () {
   const urlParams = new URLSearchParams(window.location.search);
@@ -242,17 +367,14 @@ window.onload = function () {
       .then(res => res.text())
       .then(text => {
         let data;
-        try {
-          data = JSON.parse(text);
-        } catch (e) {
-          throw new Error("Server returned an invalid response. Check your GOOGLE_SCRIPT_URL is the current /exec deployment link.");
-        }
+        try { data = JSON.parse(text); }
+        catch (e) { throw new Error("Server returned an invalid response. Check GOOGLE_SCRIPT_URL is the current /exec deployment link."); }
 
         if (!data.error) {
           sessionData = data;
-          sessionData.id = id; // keep the raw id string for later matching
+          sessionData.id = id;
           verifyBtn.disabled = false;
-          verifyBtn.textContent = "Verify Identity & Open Platform";
+          verifyBtn.textContent = "Verify Identity & Continue";
         } else {
           errBox.textContent = data.error;
           errBox.style.display = "block";
@@ -264,15 +386,15 @@ window.onload = function () {
         errBox.style.display = "block";
         verifyBtn.textContent = "Retry";
         verifyBtn.disabled = false;
-        verifyBtn.onclick = function() { window.location.reload(); };
+        verifyBtn.onclick = function () { window.location.reload(); };
       });
   }
 };
 
 // ---------------------------------------------------------
-// 3. CANDIDATE: VERIFY PASSWORD, START CAMERA + RECORDING
+// CANDIDATE: VERIFY PASSWORD + CONSENT -> SHOW RULES SCREEN
 // ---------------------------------------------------------
-function verifyAndLaunch() {
+function verifyAndProceed() {
   const entered = document.getElementById("access-password").value.trim();
   const errBox = document.getElementById("auth-error");
   errBox.style.display = "none";
@@ -294,6 +416,14 @@ function verifyAndLaunch() {
   }
 
   document.getElementById("candidate-auth-view").classList.add("hidden");
+  document.getElementById("rules-view").classList.remove("hidden");
+}
+
+// ---------------------------------------------------------
+// CANDIDATE: RULES SCREEN -> START CAMERA + RECORDING
+// ---------------------------------------------------------
+function launchInterviewEnvironment() {
+  document.getElementById("rules-view").classList.add("hidden");
   document.getElementById("interview-active-view").classList.remove("hidden");
 
   navigator.mediaDevices.getUserMedia({
@@ -304,8 +434,8 @@ function verifyAndLaunch() {
       document.getElementById("webcam-feed").srcObject = stream;
       mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'video/webm;codecs=vp8',
-        videoBitsPerSecond: 250000,  // ~250 kbps — enough to identify a face and read basic movement, not HD quality
-        audioBitsPerSecond: 32000    // ~32 kbps — clear enough speech, small footprint
+        videoBitsPerSecond: 250000,
+        audioBitsPerSecond: 32000
       });
       mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
       mediaRecorder.onstop = () => { uploadVideoAssetToDrive(); };
@@ -313,34 +443,22 @@ function verifyAndLaunch() {
       initializeAssessmentWidgets();
     })
     .catch(err => {
-      errBox.textContent = "Camera/microphone access is required to begin: " + err.message;
-      errBox.style.display = "block";
       document.getElementById("interview-active-view").classList.add("hidden");
-      document.getElementById("candidate-auth-view").classList.remove("hidden");
+      document.getElementById("rules-view").classList.remove("hidden");
+      alert("Camera/microphone access is required to begin: " + err.message);
     });
 }
 
 // ---------------------------------------------------------
-// 4. ATTACH ELEVENLABS WIDGET + PROCTORING LISTENERS
+// ATTACH ELEVENLABS WIDGET + PROCTORING LISTENERS
 // ---------------------------------------------------------
 function initializeAssessmentWidgets() {
   document.documentElement.requestFullscreen().catch(() => {});
 
-  // --- Tab / window switch ---
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden) {
-      cheatingCounter++;
-      flagViolation("Tab/Window Switch", "Candidate navigated away from the assessment tab");
-    }
+    if (document.hidden) { cheatingCounter++; flagViolation("Tab/Window Switch", "Candidate navigated away from the assessment tab"); }
   });
-
-  // --- Losing window focus (e.g. alt-tab, second monitor) ---
-  window.addEventListener("blur", () => {
-    cheatingCounter++;
-    flagViolation("Window Focus Lost", "Browser window lost focus");
-  });
-
-  // --- Exiting fullscreen ---
+  window.addEventListener("blur", () => { cheatingCounter++; flagViolation("Window Focus Lost", "Browser window lost focus"); });
   document.addEventListener("fullscreenchange", () => {
     if (!document.fullscreenElement) {
       cheatingCounter++;
@@ -348,28 +466,23 @@ function initializeAssessmentWidgets() {
       document.documentElement.requestFullscreen().catch(() => {});
     }
   });
-
-  // --- Copy / paste / right-click ---
   document.addEventListener("copy", e => { e.preventDefault(); flagViolation("Copy Attempt", "Candidate tried to copy content"); });
   document.addEventListener("paste", e => { e.preventDefault(); flagViolation("Paste Attempt", "Candidate tried to paste content"); });
   document.addEventListener("contextmenu", e => { e.preventDefault(); flagViolation("Right-Click Attempt", "Candidate tried to open context menu"); });
-
-  // --- Block common DevTools shortcuts (deterrent only, not foolproof) ---
   document.addEventListener("keydown", (e) => {
-    const blocked =
-      e.key === "F12" ||
+    const blocked = e.key === "F12" ||
       (e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(e.key.toUpperCase())) ||
       (e.ctrlKey && e.key.toUpperCase() === "U");
-    if (blocked) {
-      e.preventDefault();
-      flagViolation("DevTools Shortcut Blocked", "Candidate attempted to open developer tools: " + e.key);
-    }
+    if (blocked) { e.preventDefault(); flagViolation("DevTools Shortcut Blocked", "Candidate attempted to open developer tools: " + e.key); }
   });
 
   const dynamicVars = {
     "company_info": sessionData.c,
     "job_description": sessionData.j,
     "candidate_resume": sessionData.r,
+    "client_industry": sessionData.industry || "",
+    "client_details": sessionData.clientDetails || "",
+    "interview_questions": sessionData.questions || "",
     "session_id": String(sessionData.id)
   };
 
@@ -386,21 +499,16 @@ function initializeAssessmentWidgets() {
 
   window.addEventListener("message", function (event) {
     if (event.data && event.data.type === "elevenlabs-convai-call-ended") {
-      if (mediaRecorder && mediaRecorder.state !== "inactive") {
-        mediaRecorder.stop();
-      }
+      if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
     }
   });
-
-  startFaceMonitoring();
 }
 
 // ---------------------------------------------------------
-// REAL-TIME VIOLATION LOGGING + ON-SCREEN WARNING
+// REAL-TIME VIOLATION LOGGING + WARNING BANNER
 // ---------------------------------------------------------
 let lastWarningAt = 0;
 function flagViolation(eventType, details) {
-  // On-screen warning (throttled so rapid repeats don't spam the candidate)
   const now = Date.now();
   if (now - lastWarningAt > 1500) {
     lastWarningAt = now;
@@ -409,8 +517,6 @@ function flagViolation(eventType, details) {
     banner.classList.remove("hidden");
     setTimeout(() => banner.classList.add("hidden"), 4000);
   }
-
-  // Log immediately to the sheet — don't wait until the interview ends
   fetch(GOOGLE_SCRIPT_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -425,70 +531,10 @@ function flagViolation(eventType, details) {
 }
 
 // ---------------------------------------------------------
-// BEST-EFFORT FACE MONITORING (experimental)
-// Note: this is a heuristic signal, not proof of misconduct.
-// Lighting, camera angle, and glasses/masks can affect accuracy.
-// ---------------------------------------------------------
-let faceApiReady = false;
-let consecutiveNoFace = 0;
-let consecutiveMultiFace = 0;
-
-function startFaceMonitoring() {
-  const modelScript = document.createElement("script");
-  modelScript.src = "https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js";
-  modelScript.onload = async () => {
-    try {
-      const MODEL_URL = "https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights";
-      await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-      faceApiReady = true;
-      setInterval(runFaceCheck, 4000); // check every 4 seconds — balances accuracy vs performance
-    } catch (err) {
-      console.warn("Face monitoring unavailable:", err);
-    }
-  };
-  modelScript.onerror = () => console.warn("Face monitoring library failed to load (non-critical).");
-  document.body.appendChild(modelScript);
-}
-
-async function runFaceCheck() {
-  if (!faceApiReady) return;
-  const video = document.getElementById("webcam-feed");
-  if (!video || video.readyState < 2) return;
-
-  try {
-    const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions());
-
-    if (detections.length === 0) {
-      consecutiveNoFace++;
-      consecutiveMultiFace = 0;
-      if (consecutiveNoFace === 3) { // ~12 seconds of no face, avoids false positives from a brief look-away
-        cheatingCounter++;
-        flagViolation("No Face Detected", "Candidate not visible in camera frame for an extended period");
-      }
-    } else if (detections.length > 1) {
-      consecutiveMultiFace++;
-      consecutiveNoFace = 0;
-      if (consecutiveMultiFace === 2) { // ~8 seconds of multiple faces
-        cheatingCounter++;
-        flagViolation("Multiple Faces Detected", detections.length + " faces detected in frame");
-      }
-    } else {
-      consecutiveNoFace = 0;
-      consecutiveMultiFace = 0;
-    }
-  } catch (err) {
-    // Fail silently — this is a best-effort feature, shouldn't block the interview
-  }
-}
-
-// ---------------------------------------------------------
-// 5. UPLOAD FULL INTERVIEW RECORDING TO GOOGLE DRIVE (CHUNKED)
-// Chunking avoids Apps Script's ~50MB request limit and keeps
-// each network call small enough to succeed reliably, even for
-// 10-15+ minute recordings.
+// CHUNKED VIDEO UPLOAD (handles long recordings, small size)
 // ---------------------------------------------------------
 let uploadTriggered = false;
-const CHUNK_SIZE_BYTES = 3 * 1024 * 1024; // 3MB raw bytes per chunk before base64 inflation
+const CHUNK_SIZE_BYTES = 3 * 1024 * 1024;
 
 function manualEndInterview() {
   document.getElementById("end-interview-btn").disabled = true;
@@ -506,12 +552,11 @@ async function uploadVideoAssetToDrive() {
   const statusEl = document.getElementById("upload-status");
   const blob = new Blob(recordedChunks, { type: 'video/webm' });
   const filename = "Interview_" + (sessionData.c || "candidate").replace(/\s+/g, '_') + "_" + Date.now() + ".webm";
-  const totalChunks = Math.ceil(blob.size / CHUNK_SIZE_BYTES);
+  const totalChunks = Math.ceil(blob.size / CHUNK_SIZE_BYTES) || 1;
 
   try {
     for (let i = 0; i < totalChunks; i++) {
       statusEl.textContent = "Uploading recording... (" + (i + 1) + "/" + totalChunks + ") Please don't close this tab.";
-
       const start = i * CHUNK_SIZE_BYTES;
       const end = Math.min(start + CHUNK_SIZE_BYTES, blob.size);
       const chunkBlob = blob.slice(start, end);
@@ -521,29 +566,21 @@ async function uploadVideoAssetToDrive() {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({
-          action: "uploadChunk",
-          sessionId: sessionData.id,
-          filename: filename,
-          chunkIndex: i,
-          totalChunks: totalChunks,
-          data: base64Chunk
+          action: "uploadChunk", sessionId: sessionData.id, filename: filename,
+          chunkIndex: i, totalChunks: totalChunks, data: base64Chunk
         })
       });
       const data = JSON.parse(await res.text());
       if (!data.success) throw new Error(data.error || "Chunk " + i + " failed");
     }
 
-    // All chunks sent — ask server to assemble them into the final file
     statusEl.textContent = "Finalizing upload...";
     const finalizeRes = await fetch(GOOGLE_SCRIPT_URL, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({
-        action: "finalizeUpload",
-        sessionId: sessionData.id,
-        filename: filename,
-        totalChunks: totalChunks,
-        cheats: cheatingCounter + " tab/window switches flagged"
+        action: "finalizeUpload", sessionId: sessionData.id, filename: filename,
+        totalChunks: totalChunks, cheats: cheatingCounter + " tab/window switches flagged"
       })
     });
     const finalizeData = JSON.parse(await finalizeRes.text());
@@ -566,6 +603,48 @@ function blobToBase64(blob) {
     reader.readAsDataURL(blob);
   });
 }
+
+// ---------------------------------------------------------
+// BEST-EFFORT FACE MONITORING (experimental)
+// ---------------------------------------------------------
+let faceApiReady = false;
+let consecutiveNoFace = 0;
+let consecutiveMultiFace = 0;
+
+function startFaceMonitoring() {
+  const modelScript = document.createElement("script");
+  modelScript.src = "https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js";
+  modelScript.onload = async () => {
+    try {
+      const MODEL_URL = "https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights";
+      await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+      faceApiReady = true;
+      setInterval(runFaceCheck, 4000);
+    } catch (err) { console.warn("Face monitoring unavailable:", err); }
+  };
+  modelScript.onerror = () => console.warn("Face monitoring library failed to load (non-critical).");
+  document.body.appendChild(modelScript);
+}
+
+async function runFaceCheck() {
+  if (!faceApiReady) return;
+  const video = document.getElementById("webcam-feed");
+  if (!video || video.readyState < 2) return;
+  try {
+    const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions());
+    if (detections.length === 0) {
+      consecutiveNoFace++; consecutiveMultiFace = 0;
+      if (consecutiveNoFace === 3) { cheatingCounter++; flagViolation("No Face Detected", "Candidate not visible in camera frame for an extended period"); }
+    } else if (detections.length > 1) {
+      consecutiveMultiFace++; consecutiveNoFace = 0;
+      if (consecutiveMultiFace === 2) { cheatingCounter++; flagViolation("Multiple Faces Detected", detections.length + " faces detected in frame"); }
+    } else { consecutiveNoFace = 0; consecutiveMultiFace = 0; }
+  } catch (err) { /* fail silently — best-effort only */ }
+}
+
+// Kick off face monitoring once the widgets are initialized
+const _origInit = initializeAssessmentWidgets;
+initializeAssessmentWidgets = function() { _origInit(); startFaceMonitoring(); };
 </script>
 
 </body>
