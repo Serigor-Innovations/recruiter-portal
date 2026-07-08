@@ -210,8 +210,48 @@ let questionList = [];
 
 // ---------------------------------------------------------
 // STEP 1 -> STEP 2: BUILD STARTER QUESTIONS FROM JD/RESUME
-// (Template-based, not a real AI call — fully editable after.)
+// Heuristic text analysis (regex/keyword based) — not a real
+// AI call, but it actually reads the JD/resume content instead
+// of using fixed generic templates.
 // ---------------------------------------------------------
+const SKILL_DICTIONARY = [
+  "Python","Java","JavaScript","TypeScript","C++","C#","SQL","NoSQL","AWS","Azure","GCP",
+  "React","Angular","Vue","Node.js","Django","Flask","Spring","Kubernetes","Docker","Terraform",
+  "Salesforce","HubSpot","SAP","Excel","PowerPoint","Tableau","Power BI","Figma","Photoshop",
+  "SEO","PPC","Google Ads","Google Analytics","CRM","ERP","Agile","Scrum","Six Sigma",
+  "Machine Learning","Data Analysis","Project Management","Supply Chain","Logistics",
+  "Recruiting","Sourcing","Underwriting","Compliance","Audit","Bookkeeping","GAAP",
+  "Customer Success","Account Management","B2B Sales","B2C Sales","Negotiation","Forecasting"
+];
+
+function extractRequirementLines(jd) {
+  const lines = jd.split(/\r?\n/);
+  const requirementKeywords = /experience|proficient|knowledge of|familiar with|responsible for|ability to|years? of|expertise|skilled|manage|lead|develop|build|design|analy[sz]e/i;
+  const bulletPattern = /^[\s]*[-*•\u2022\d.)]+\s*(.+)/;
+
+  const candidates = [];
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    if (trimmed.length < 15 || trimmed.length > 160) return;
+    const bulletMatch = trimmed.match(bulletPattern);
+    const text = bulletMatch ? bulletMatch[1] : trimmed;
+    if (bulletMatch || requirementKeywords.test(text)) {
+      candidates.push(text.replace(/\s+/g, ' ').trim());
+    }
+  });
+
+  // De-duplicate and cap at a reasonable number
+  return [...new Set(candidates)].slice(0, 5);
+}
+
+function extractMatchingSkills(jd, resume) {
+  const jdLower = jd.toLowerCase();
+  const resumeLower = resume.toLowerCase();
+  return SKILL_DICTIONARY.filter(skill =>
+    jdLower.includes(skill.toLowerCase()) && resumeLower.includes(skill.toLowerCase())
+  ).slice(0, 4);
+}
+
 function goToQuestionReview() {
   const company = document.getElementById("comp-name").value.trim();
   const jd = document.getElementById("jd-text").value.trim();
@@ -225,14 +265,29 @@ function goToQuestionReview() {
     return;
   }
 
-  questionList = [
-    "Walk me through your most relevant experience for this role.",
-    "Tell me about a specific project where you had to solve a difficult technical or operational problem.",
-    "What part of this job description matches something you've directly done before?",
-    "Describe a time you disagreed with a teammate or manager and how you handled it.",
-    "What's something in your resume you'd want to go deeper on?",
-    "Why are you interested in this particular role at " + company + "?"
-  ];
+  const requirementLines = extractRequirementLines(jd);
+  const matchingSkills = extractMatchingSkills(jd, resume);
+
+  questionList = [];
+
+  // Questions grounded in actual JD requirement lines
+  requirementLines.forEach(line => {
+    questionList.push("The job description mentions: \"" + line + "\" — walk me through a specific time you did this.");
+  });
+
+  // Questions grounded in skills that appear in BOTH the JD and the resume
+  matchingSkills.forEach(skill => {
+    questionList.push("Your resume and this role both mention " + skill + " — tell me about a real project where you used it.");
+  });
+
+  // Fallbacks if the JD/resume didn't yield enough specific material
+  if (questionList.length < 3) {
+    questionList.push("Walk me through your most relevant experience for this specific role.");
+    questionList.push("What part of this job description most closely matches something you've directly done before?");
+  }
+
+  questionList.push("Describe a time you disagreed with a teammate or manager and how you handled it.");
+  questionList.push("Why are you interested in this particular role at " + company + "?");
 
   renderQuestions();
   document.getElementById("recruiter-view").classList.add("hidden");
