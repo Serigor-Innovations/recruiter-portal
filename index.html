@@ -117,6 +117,10 @@
     <h2>Identity &amp; Credentials Verification</h2>
     <p style="color: #64748B; font-size:14px;">Enter the access password sent to you to begin your assessment.</p>
     <input type="text" id="access-password" placeholder="Format: INT-XXXXXX" style="text-align:center; max-width:320px; font-size:16px; margin: 20px 0;"><br>
+    <label style="font-weight:400; display:flex; align-items:flex-start; gap:8px; max-width:400px; margin:16px auto; text-align:left; font-size:13px; color:#475569;">
+      <input type="checkbox" id="consent-checkbox" style="width:auto; margin-top:2px;">
+      I consent to this session recording my webcam, microphone, and screen activity, and to that recording and activity log being shared with the hiring company.
+    </label>
     <button id="verify-btn" onclick="verifyAndLaunch()" style="max-width:240px;" disabled>Loading session...</button>
     <div id="auth-error" class="error-box"></div>
   </div>
@@ -126,9 +130,10 @@
     <div class="status-badge">&#128308; Live Proctoring Activated</div>
     <h2>Interview System Active</h2>
     <p style="color: #64748B; font-size: 14px; max-width: 450px; margin: 0 auto 20px;">
-      Your workspace is being recorded for review. Click the call icon in the bottom-right corner to begin speaking with the AI interviewer.
+      Your workspace is being recorded for review. Click the call icon in the bottom-right corner to begin speaking with the AI interviewer. Do not switch tabs, exit fullscreen, or leave the camera frame — these actions are logged.
     </p>
     <video id="webcam-feed" autoplay playsinline muted></video>
+    <div id="warning-banner" class="hidden" style="background:#FEF3C7; border:1px solid #FCD34D; color:#92400E; padding:12px 16px; border-radius:8px; margin:0 auto 16px; max-width:450px; font-weight:600; font-size:14px;"></div>
     <button id="end-interview-btn" onclick="manualEndInterview()" style="max-width:280px; background:#DC2626;">End Interview &amp; Submit Recording</button>
     <div id="upload-status" style="font-size:13px; color:#64748B; margin-top:10px;"></div>
   </div>
@@ -282,6 +287,11 @@ function verifyAndLaunch() {
     errBox.style.display = "block";
     return;
   }
+  if (!document.getElementById("consent-checkbox").checked) {
+    errBox.textContent = "Please check the consent box to continue — recording is required for this assessment.";
+    errBox.style.display = "block";
+    return;
+  }
 
   document.getElementById("candidate-auth-view").classList.add("hidden");
   document.getElementById("interview-active-view").classList.remove("hidden");
@@ -309,15 +319,45 @@ function verifyAndLaunch() {
 function initializeAssessmentWidgets() {
   document.documentElement.requestFullscreen().catch(() => {});
 
+  // --- Tab / window switch ---
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
       cheatingCounter++;
-      console.warn("Tab/window switch detected. Count:", cheatingCounter);
+      flagViolation("Tab/Window Switch", "Candidate navigated away from the assessment tab");
     }
   });
-  document.addEventListener("copy", e => e.preventDefault());
-  document.addEventListener("paste", e => e.preventDefault());
-  document.addEventListener("contextmenu", e => e.preventDefault());
+
+  // --- Losing window focus (e.g. alt-tab, second monitor) ---
+  window.addEventListener("blur", () => {
+    cheatingCounter++;
+    flagViolation("Window Focus Lost", "Browser window lost focus");
+  });
+
+  // --- Exiting fullscreen ---
+  document.addEventListener("fullscreenchange", () => {
+    if (!document.fullscreenElement) {
+      cheatingCounter++;
+      flagViolation("Fullscreen Exited", "Candidate exited fullscreen mode");
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+  });
+
+  // --- Copy / paste / right-click ---
+  document.addEventListener("copy", e => { e.preventDefault(); flagViolation("Copy Attempt", "Candidate tried to copy content"); });
+  document.addEventListener("paste", e => { e.preventDefault(); flagViolation("Paste Attempt", "Candidate tried to paste content"); });
+  document.addEventListener("contextmenu", e => { e.preventDefault(); flagViolation("Right-Click Attempt", "Candidate tried to open context menu"); });
+
+  // --- Block common DevTools shortcuts (deterrent only, not foolproof) ---
+  document.addEventListener("keydown", (e) => {
+    const blocked =
+      e.key === "F12" ||
+      (e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(e.key.toUpperCase())) ||
+      (e.ctrlKey && e.key.toUpperCase() === "U");
+    if (blocked) {
+      e.preventDefault();
+      flagViolation("DevTools Shortcut Blocked", "Candidate attempted to open developer tools: " + e.key);
+    }
+  });
 
   const dynamicVars = {
     "company_info": sessionData.c,
@@ -344,6 +384,94 @@ function initializeAssessmentWidgets() {
       }
     }
   });
+
+  startFaceMonitoring();
+}
+
+// ---------------------------------------------------------
+// REAL-TIME VIOLATION LOGGING + ON-SCREEN WARNING
+// ---------------------------------------------------------
+let lastWarningAt = 0;
+function flagViolation(eventType, details) {
+  // On-screen warning (throttled so rapid repeats don't spam the candidate)
+  const now = Date.now();
+  if (now - lastWarningAt > 1500) {
+    lastWarningAt = now;
+    const banner = document.getElementById("warning-banner");
+    banner.textContent = "\u26A0 Warning: " + eventType + " has been logged for review.";
+    banner.classList.remove("hidden");
+    setTimeout(() => banner.classList.add("hidden"), 4000);
+  }
+
+  // Log immediately to the sheet — don't wait until the interview ends
+  fetch(GOOGLE_SCRIPT_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({
+      action: "logViolation",
+      sessionId: sessionData ? sessionData.id : "",
+      company: sessionData ? sessionData.c : "",
+      event: eventType,
+      details: details
+    })
+  }).catch(err => console.warn("Violation log failed to send:", err));
+}
+
+// ---------------------------------------------------------
+// BEST-EFFORT FACE MONITORING (experimental)
+// Note: this is a heuristic signal, not proof of misconduct.
+// Lighting, camera angle, and glasses/masks can affect accuracy.
+// ---------------------------------------------------------
+let faceApiReady = false;
+let consecutiveNoFace = 0;
+let consecutiveMultiFace = 0;
+
+function startFaceMonitoring() {
+  const modelScript = document.createElement("script");
+  modelScript.src = "https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js";
+  modelScript.onload = async () => {
+    try {
+      const MODEL_URL = "https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights";
+      await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+      faceApiReady = true;
+      setInterval(runFaceCheck, 4000); // check every 4 seconds — balances accuracy vs performance
+    } catch (err) {
+      console.warn("Face monitoring unavailable:", err);
+    }
+  };
+  modelScript.onerror = () => console.warn("Face monitoring library failed to load (non-critical).");
+  document.body.appendChild(modelScript);
+}
+
+async function runFaceCheck() {
+  if (!faceApiReady) return;
+  const video = document.getElementById("webcam-feed");
+  if (!video || video.readyState < 2) return;
+
+  try {
+    const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions());
+
+    if (detections.length === 0) {
+      consecutiveNoFace++;
+      consecutiveMultiFace = 0;
+      if (consecutiveNoFace === 3) { // ~12 seconds of no face, avoids false positives from a brief look-away
+        cheatingCounter++;
+        flagViolation("No Face Detected", "Candidate not visible in camera frame for an extended period");
+      }
+    } else if (detections.length > 1) {
+      consecutiveMultiFace++;
+      consecutiveNoFace = 0;
+      if (consecutiveMultiFace === 2) { // ~8 seconds of multiple faces
+        cheatingCounter++;
+        flagViolation("Multiple Faces Detected", detections.length + " faces detected in frame");
+      }
+    } else {
+      consecutiveNoFace = 0;
+      consecutiveMultiFace = 0;
+    }
+  } catch (err) {
+    // Fail silently — this is a best-effort feature, shouldn't block the interview
+  }
 }
 
 // ---------------------------------------------------------
