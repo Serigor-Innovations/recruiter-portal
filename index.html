@@ -296,10 +296,17 @@ function verifyAndLaunch() {
   document.getElementById("candidate-auth-view").classList.add("hidden");
   document.getElementById("interview-active-view").classList.remove("hidden");
 
-  navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+  navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 480 }, height: { ideal: 360 }, frameRate: { ideal: 15, max: 15 } },
+      audio: true
+    })
     .then(stream => {
       document.getElementById("webcam-feed").srcObject = stream;
-      mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8' });
+      mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm;codecs=vp8',
+        videoBitsPerSecond: 250000,  // ~250 kbps — enough to identify a face and read basic movement, not HD quality
+        audioBitsPerSecond: 32000    // ~32 kbps — clear enough speech, small footprint
+      });
       mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
       mediaRecorder.onstop = () => { uploadVideoAssetToDrive(); };
       mediaRecorder.start(1000);
@@ -475,9 +482,13 @@ async function runFaceCheck() {
 }
 
 // ---------------------------------------------------------
-// 5. UPLOAD FULL INTERVIEW RECORDING TO GOOGLE DRIVE
+// 5. UPLOAD FULL INTERVIEW RECORDING TO GOOGLE DRIVE (CHUNKED)
+// Chunking avoids Apps Script's ~50MB request limit and keeps
+// each network call small enough to succeed reliably, even for
+// 10-15+ minute recordings.
 // ---------------------------------------------------------
 let uploadTriggered = false;
+const CHUNK_SIZE_BYTES = 3 * 1024 * 1024; // 3MB raw bytes per chunk before base64 inflation
 
 function manualEndInterview() {
   document.getElementById("end-interview-btn").disabled = true;
@@ -488,49 +499,72 @@ function manualEndInterview() {
   }
 }
 
-function uploadVideoAssetToDrive() {
-  if (uploadTriggered) return; // prevent double-submission from both the widget event and the manual button
+async function uploadVideoAssetToDrive() {
+  if (uploadTriggered) return;
   uploadTriggered = true;
 
-  document.getElementById("upload-status").textContent = "Uploading your recording, please don't close this tab...";
-
+  const statusEl = document.getElementById("upload-status");
   const blob = new Blob(recordedChunks, { type: 'video/webm' });
-  const reader = new FileReader();
-  reader.readAsDataURL(blob);
-  reader.onloadend = function () {
-    const base64Data = reader.result.split(',')[1];
-    fetch(GOOGLE_SCRIPT_URL, {
-      method: 'POST',
+  const filename = "Interview_" + (sessionData.c || "candidate").replace(/\s+/g, '_') + "_" + Date.now() + ".webm";
+  const totalChunks = Math.ceil(blob.size / CHUNK_SIZE_BYTES);
+
+  try {
+    for (let i = 0; i < totalChunks; i++) {
+      statusEl.textContent = "Uploading recording... (" + (i + 1) + "/" + totalChunks + ") Please don't close this tab.";
+
+      const start = i * CHUNK_SIZE_BYTES;
+      const end = Math.min(start + CHUNK_SIZE_BYTES, blob.size);
+      const chunkBlob = blob.slice(start, end);
+      const base64Chunk = await blobToBase64(chunkBlob);
+
+      const res = await fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action: "uploadChunk",
+          sessionId: sessionData.id,
+          filename: filename,
+          chunkIndex: i,
+          totalChunks: totalChunks,
+          data: base64Chunk
+        })
+      });
+      const data = JSON.parse(await res.text());
+      if (!data.success) throw new Error(data.error || "Chunk " + i + " failed");
+    }
+
+    // All chunks sent — ask server to assemble them into the final file
+    statusEl.textContent = "Finalizing upload...";
+    const finalizeRes = await fetch(GOOGLE_SCRIPT_URL, {
+      method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({
+        action: "finalizeUpload",
         sessionId: sessionData.id,
-        fileData: base64Data,
-        filename: "Interview_" + (sessionData.c || "candidate").replace(/\s+/g, '_') + "_" + Date.now() + ".webm",
+        filename: filename,
+        totalChunks: totalChunks,
         cheats: cheatingCounter + " tab/window switches flagged"
       })
-    })
-      .then(r => r.text())
-      .then(text => {
-        let data;
-        try {
-          data = JSON.parse(text);
-        } catch (e) {
-          throw new Error("Server returned an invalid response: " + text.slice(0, 200));
-        }
-        if (data.success) {
-          document.getElementById("upload-status").innerHTML =
-            "Recording uploaded successfully. <a href='" + data.url + "' target='_blank'>Open video in Drive</a>";
-        } else {
-          throw new Error(data.error || "Unknown server error");
-        }
-      })
-      .catch(err => {
-        console.error(err);
-        document.getElementById("upload-status").textContent = "Upload failed: " + err.message + " — please keep this tab open and contact support.";
-        uploadTriggered = false; // allow retry
-        document.getElementById("end-interview-btn").disabled = false;
-      });
-  };
+    });
+    const finalizeData = JSON.parse(await finalizeRes.text());
+    if (!finalizeData.success) throw new Error(finalizeData.error || "Finalize step failed");
+
+    statusEl.textContent = "Recording submitted successfully. You may close this tab.";
+  } catch (err) {
+    console.error(err);
+    statusEl.textContent = "Upload failed: " + err.message + " — please keep this tab open and contact support.";
+    uploadTriggered = false;
+    document.getElementById("end-interview-btn").disabled = false;
+  }
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
 }
 </script>
 
