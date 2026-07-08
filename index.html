@@ -129,6 +129,7 @@
       Your workspace is being recorded for review. Click the call icon in the bottom-right corner to begin speaking with the AI interviewer.
     </p>
     <video id="webcam-feed" autoplay playsinline muted></video>
+    <button id="end-interview-btn" onclick="manualEndInterview()" style="max-width:280px; background:#DC2626;">End Interview &amp; Submit Recording</button>
     <div id="upload-status" style="font-size:13px; color:#64748B; margin-top:10px;"></div>
   </div>
 </div>
@@ -321,7 +322,8 @@ function initializeAssessmentWidgets() {
   const dynamicVars = {
     "company_info": sessionData.c,
     "job_description": sessionData.j,
-    "candidate_resume": sessionData.r
+    "candidate_resume": sessionData.r,
+    "session_id": String(sessionData.id)
   };
 
   const container = document.getElementById("widget-container");
@@ -347,7 +349,21 @@ function initializeAssessmentWidgets() {
 // ---------------------------------------------------------
 // 5. UPLOAD FULL INTERVIEW RECORDING TO GOOGLE DRIVE
 // ---------------------------------------------------------
+let uploadTriggered = false;
+
+function manualEndInterview() {
+  document.getElementById("end-interview-btn").disabled = true;
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    mediaRecorder.stop();
+  } else if (!uploadTriggered) {
+    uploadVideoAssetToDrive();
+  }
+}
+
 function uploadVideoAssetToDrive() {
+  if (uploadTriggered) return; // prevent double-submission from both the widget event and the manual button
+  uploadTriggered = true;
+
   document.getElementById("upload-status").textContent = "Uploading your recording, please don't close this tab...";
 
   const blob = new Blob(recordedChunks, { type: 'video/webm' });
