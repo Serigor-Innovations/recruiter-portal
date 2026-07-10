@@ -394,6 +394,8 @@ function renderQuestions() {
     const textarea = document.createElement("textarea");
     textarea.value = q;
     textarea.rows = 1;
+    textarea.style.whiteSpace = "normal";
+    textarea.style.wordWrap = "break-word";
     textarea.addEventListener("input", function () {
       updateQuestion(idx, this.value);
       autoGrow(this);
@@ -407,7 +409,7 @@ function renderQuestions() {
     row.appendChild(removeBtn);
     container.appendChild(row);
 
-    autoGrow(textarea); // size correctly on initial render, not just on typing
+    requestAnimationFrame(() => autoGrow(textarea)); // ensures correct height once actually in the DOM
   });
 }
 
