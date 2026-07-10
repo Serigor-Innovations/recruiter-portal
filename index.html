@@ -120,6 +120,10 @@
     <label>Candidate Resume</label>
     <textarea id="resume-text" placeholder="Paste candidate resume text..."></textarea>
 
+    <label>How do you want to test this candidate? (optional)</label>
+    <textarea id="testing-prompt" placeholder="e.g. Focus heavily on leadership under pressure and stakeholder communication. Go easy on deep technical trivia — we mainly need to confirm they can own a project end to end."></textarea>
+    <div class="hint">This shapes the starter questions in the next step, in addition to the JD and resume.</div>
+
     <button id="suggest-btn" onclick="goToQuestionReview()">Suggest Interview Questions &rarr;</button>
     <div id="step1-error" class="error-box"></div>
   </div>
@@ -199,7 +203,7 @@
 // =========================================================
 // CONFIG
 // =========================================================
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx8v1r8vZ60myLt6kX4zryYnbI6oCOyPdj_8TOnYtA0GNzSveDpHSuxMfjMr-FuW1jU/exec"; // <-- your current /exec URL
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwrkIskGvwfYRiqRI2zF3CdQ2wA2-jjXJ0zl71TPApe52Mo1_h_K8rU8MBAF44PjtNT/exec"; // <-- your current /exec URL
 const ELEVENLABS_AGENT_ID = "agent_2801kww0es8wfbj98vga0f606ph5";
 
 let sessionData = null;
@@ -252,10 +256,48 @@ function extractMatchingSkills(jd, resume) {
   ).slice(0, 4);
 }
 
+// Recruiter's free-text "how do you want to test this candidate" prompt.
+// Not a real AI call — matches known testing themes to question templates,
+// plus reuses the same requirement-line extraction used on the JD.
+const TESTING_THEME_MAP = [
+  { pattern: /leadership|managing people|team lead|manage a team/i,
+    question: "Tell me about a time you led a team through a difficult situation — what did you do and what was the outcome?" },
+  { pattern: /pressure|deadline|stress|high[- ]stakes/i,
+    question: "Describe a high-pressure situation with a tight deadline — how did you handle it and what was the result?" },
+  { pattern: /communicat|stakeholder|present/i,
+    question: "Tell me about a time you had to explain something complex to a non-technical stakeholder — how did you approach it?" },
+  { pattern: /problem[- ]solv|troubleshoot|debug/i,
+    question: "Walk me through a specific problem you had to troubleshoot from scratch — what was your process?" },
+  { pattern: /culture|values|fit/i,
+    question: "What kind of work environment brings out your best work, and why?" },
+  { pattern: /creativ|innovat/i,
+    question: "Tell me about a time you came up with a solution nobody else had considered." },
+  { pattern: /ownership|initiative|self[- ]start/i,
+    question: "Tell me about something you took full ownership of without being asked — from start to finish." },
+  { pattern: /conflict|disagreement/i,
+    question: "Describe a real disagreement you had with a colleague or manager and how it was resolved." },
+  { pattern: /technical depth|deep technical|architecture|system design/i,
+    question: "Walk me through the architecture of the most complex system you've built or maintained." },
+  { pattern: /customer|client facing|client-facing/i,
+    question: "Tell me about a time a client or customer was unhappy — what did you do?" }
+];
+
+function generateFocusQuestions(prompt) {
+  if (!prompt) return [];
+  const matched = TESTING_THEME_MAP.filter(t => t.pattern.test(prompt)).map(t => t.question);
+  // Also treat explicit requirement-style lines in the prompt itself as material for questions
+  const promptLines = extractRequirementLines(prompt);
+  promptLines.forEach(line => {
+    matched.push("Based on what the recruiter wants tested — \"" + line + "\" — can you speak to your experience with this?");
+  });
+  return [...new Set(matched)].slice(0, 6);
+}
+
 function goToQuestionReview() {
   const company = document.getElementById("comp-name").value.trim();
   const jd = document.getElementById("jd-text").value.trim();
   const resume = document.getElementById("resume-text").value.trim();
+  const testingPrompt = document.getElementById("testing-prompt").value.trim();
   const errBox = document.getElementById("step1-error");
   errBox.style.display = "none";
 
@@ -267,20 +309,24 @@ function goToQuestionReview() {
 
   const requirementLines = extractRequirementLines(jd);
   const matchingSkills = extractMatchingSkills(jd, resume);
+  const focusQuestions = generateFocusQuestions(testingPrompt);
 
   questionList = [];
 
-  // Questions grounded in actual JD requirement lines
+  // Recruiter's explicit testing focus comes first — it's the strongest signal of intent
+  focusQuestions.forEach(q => questionList.push(q));
+
+  // Then questions grounded in actual JD requirement lines
   requirementLines.forEach(line => {
     questionList.push("The job description mentions: \"" + line + "\" — walk me through a specific time you did this.");
   });
 
-  // Questions grounded in skills that appear in BOTH the JD and the resume
+  // Then questions grounded in skills that appear in BOTH the JD and the resume
   matchingSkills.forEach(skill => {
     questionList.push("Your resume and this role both mention " + skill + " — tell me about a real project where you used it.");
   });
 
-  // Fallbacks if the JD/resume didn't yield enough specific material
+  // Fallbacks if none of the above yielded enough specific material
   if (questionList.length < 3) {
     questionList.push("Walk me through your most relevant experience for this specific role.");
     questionList.push("What part of this job description most closely matches something you've directly done before?");
@@ -362,7 +408,8 @@ function generateCandidateAccess() {
     industry: industry,
     clientDetails: clientDetails,
     recruiterEmail: recruiterEmail,
-    questions: questionList.join("\n")
+    questions: questionList.join("\n"),
+    testingPrompt: document.getElementById("testing-prompt").value.trim()
   };
 
   btn.disabled = true;
