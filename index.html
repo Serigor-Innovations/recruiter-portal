@@ -107,6 +107,17 @@
   .chip.selected {
     background: var(--serigor-accent); border-color: var(--serigor-accent); color: white;
   }
+  .file-drop-zone {
+    border: 2px dashed #CBD5E1; border-radius: 8px; padding: 14px; text-align: center;
+    font-size: 13px; color: #64748B; margin-top: 6px; transition: 0.15s; cursor: pointer;
+    background: #F8FAFC;
+  }
+  .file-drop-zone.dragover { border-color: var(--serigor-accent); background: #EFF6FF; color: var(--serigor-accent); }
+  .file-drop-zone label { display: inline; margin: 0; font-weight: 600; color: var(--serigor-accent); cursor: pointer; text-decoration: underline; }
+  .file-drop-zone input[type="file"] { display: none; }
+  .file-status { font-size: 12px; margin-top: 4px; min-height: 16px; }
+  .file-status.success { color: #166534; }
+  .file-status.error { color: #B91C1C; }
   .spinner {
     display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4);
     border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 8px;
@@ -140,17 +151,27 @@
     <textarea id="client-details" placeholder="Anything about the client's culture, priorities, or context worth the AI knowing..."></textarea>
 
     <label>Core Job Specifications (JD)</label>
-    <textarea id="jd-text" placeholder="Paste the job description..."></textarea>
+    <div class="file-drop-zone" id="jd-drop-zone" ondragover="handleDragOver(event, 'jd-drop-zone')" ondragleave="handleDragLeave(event, 'jd-drop-zone')" ondrop="handleDrop(event, 'jd-file-input')">
+      Drag &amp; drop a PDF or Word file here, or <label for="jd-file-input">browse</label>
+      <input type="file" id="jd-file-input" accept=".pdf,.docx" onchange="handleFileSelect(this.files[0], 'jd-text', 'jd-file-status')">
+    </div>
+    <div class="file-status" id="jd-file-status"></div>
+    <textarea id="jd-text" placeholder="Paste the job description, or upload a file above..."></textarea>
 
     <label>Candidate Resume</label>
-    <textarea id="resume-text" placeholder="Paste candidate resume text..."></textarea>
+    <div class="file-drop-zone" id="resume-drop-zone" ondragover="handleDragOver(event, 'resume-drop-zone')" ondragleave="handleDragLeave(event, 'resume-drop-zone')" ondrop="handleDrop(event, 'resume-file-input')">
+      Drag &amp; drop a PDF or Word file here, or <label for="resume-file-input">browse</label>
+      <input type="file" id="resume-file-input" accept=".pdf,.docx" onchange="handleFileSelect(this.files[0], 'resume-text', 'resume-file-status')">
+    </div>
+    <div class="file-status" id="resume-file-status"></div>
+    <textarea id="resume-text" placeholder="Paste candidate resume text, or upload a file above..."></textarea>
 
     <label>Interview Type Focus (select any that apply)</label>
     <div class="chip-row" id="interview-type-chips"></div>
 
     <label style="margin-top:20px;">How do you want to test this candidate? (optional)</label>
     <textarea id="testing-prompt" placeholder="e.g. Focus heavily on leadership under pressure and stakeholder communication. Go easy on deep technical trivia — we mainly need to confirm they can own a project end to end."></textarea>
-    <div class="hint">Your chip selections above and this free-text box along with JD and resume are combined to shape the AI-generated questions.</div>
+    <div class="hint">The AI already uses the full JD and resume below — your chip selections and this free-text box add extra focus on top of that.</div>
 
     <button id="suggest-btn" onclick="goToQuestionReview()">Generate AI Interview Questions &rarr;</button>
     <div id="step1-error" class="error-box"></div>
@@ -228,6 +249,11 @@
 
 <div id="widget-container"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+</script>
 <script>
 // =========================================================
 // CONFIG
@@ -240,6 +266,96 @@ let cheatingCounter = 0;
 let mediaRecorder = null;
 let recordedChunks = [];
 let questionList = [];
+
+// ---------------------------------------------------------
+// FILE UPLOAD: extract text from PDF/Word and fill the
+// corresponding textarea. Manual typing/pasting still works
+// exactly as before — this only pre-fills, never locks the field.
+// ---------------------------------------------------------
+function handleDragOver(e, zoneId) {
+  e.preventDefault();
+  document.getElementById(zoneId).classList.add("dragover");
+}
+function handleDragLeave(e, zoneId) {
+  document.getElementById(zoneId).classList.remove("dragover");
+}
+function handleDrop(e, fileInputId) {
+  e.preventDefault();
+  const zoneId = fileInputId.replace("-file-input", "-drop-zone");
+  document.getElementById(zoneId).classList.remove("dragover");
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  const textareaId = fileInputId.replace("-file-input", "-text");
+  const statusId = fileInputId.replace("-file-input", "-file-status");
+  handleFileSelect(file, textareaId, statusId);
+}
+
+async function handleFileSelect(file, textareaId, statusId) {
+  if (!file) return;
+  const statusEl = document.getElementById(statusId);
+  statusEl.className = "file-status";
+  statusEl.textContent = "Reading " + file.name + "...";
+
+  try {
+    const name = file.name.toLowerCase();
+    let extractedText = "";
+
+    if (name.endsWith(".pdf")) {
+      extractedText = await extractPdfText(file);
+    } else if (name.endsWith(".docx")) {
+      extractedText = await extractDocxText(file);
+    } else if (name.endsWith(".doc")) {
+      throw new Error("Old .doc format isn't supported for auto-extraction — please save as .docx or .pdf, or paste the text manually.");
+    } else {
+      throw new Error("Unsupported file type — please upload a .pdf or .docx file.");
+    }
+
+    if (!extractedText.trim()) {
+      throw new Error("No text could be extracted — the file may be a scanned image. Please paste the text manually.");
+    }
+
+    document.getElementById(textareaId).value = extractedText.trim();
+    statusEl.className = "file-status success";
+    statusEl.textContent = "\u2713 Extracted from " + file.name + " — feel free to edit the text below.";
+  } catch (err) {
+    statusEl.className = "file-status error";
+    statusEl.textContent = err.message;
+  }
+}
+
+function extractPdfText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async function () {
+      try {
+        const typedArray = new Uint8Array(this.result);
+        const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
+        let text = "";
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          text += content.items.map(item => item.str).join(" ") + "\n";
+        }
+        resolve(text);
+      } catch (err) { reject(new Error("Failed to read PDF: " + err.message)); }
+    };
+    reader.onerror = () => reject(new Error("Failed to read file."));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function extractDocxText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = function () {
+      mammoth.extractRawText({ arrayBuffer: this.result })
+        .then(result => resolve(result.value))
+        .catch(err => reject(new Error("Failed to read Word file: " + err.message)));
+    };
+    reader.onerror = () => reject(new Error("Failed to read file."));
+    reader.readAsArrayBuffer(file);
+  });
+}
 
 // ---------------------------------------------------------
 // INTERVIEW TYPE CHIPS (multi-select, above the free-text prompt)
