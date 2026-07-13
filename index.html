@@ -97,6 +97,16 @@
   .question-row button:hover { background: #FECACA; }
   .rules-list { text-align: left; max-width: 480px; margin: 20px auto; font-size: 14px; line-height: 1.9; color: #334155; }
   .rules-list li { margin-bottom: 6px; }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .chip {
+    padding: 8px 14px; border-radius: 20px; border: 1px solid #E2E8F0; background: #F8FAFC;
+    font-size: 13px; font-weight: 600; color: #475569; cursor: pointer; transition: 0.15s;
+    user-select: none;
+  }
+  .chip:hover { border-color: var(--serigor-accent); }
+  .chip.selected {
+    background: var(--serigor-accent); border-color: var(--serigor-accent); color: white;
+  }
   .spinner {
     display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4);
     border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 8px;
@@ -135,9 +145,12 @@
     <label>Candidate Resume</label>
     <textarea id="resume-text" placeholder="Paste candidate resume text..."></textarea>
 
-    <label>How do you want to test this candidate? (optional)</label>
+    <label>Interview Type Focus (select any that apply)</label>
+    <div class="chip-row" id="interview-type-chips"></div>
+
+    <label style="margin-top:20px;">How do you want to test this candidate? (optional)</label>
     <textarea id="testing-prompt" placeholder="e.g. Focus heavily on leadership under pressure and stakeholder communication. Go easy on deep technical trivia — we mainly need to confirm they can own a project end to end."></textarea>
-    <div class="hint">This shapes the AI-generated questions in the next step, along with the JD and resume.</div>
+    <div class="hint">Your chip selections above and this free-text box are combined to shape the AI-generated questions.</div>
 
     <button id="suggest-btn" onclick="goToQuestionReview()">Generate AI Interview Questions &rarr;</button>
     <div id="step1-error" class="error-box"></div>
@@ -219,7 +232,7 @@
 // =========================================================
 // CONFIG
 // =========================================================
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyM9uWIB5XwQJ320ghkPKkPxaWxTzhL9yEspyD1kg6_-HT2hIPDsexYQjY7XVrEPabs/exec"; // <-- your current /exec URL
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwrkIskGvwfYRiqRI2zF3CdQ2wA2-jjXJ0zl71TPApe52Mo1_h_K8rU8MBAF44PjtNT/exec"; // <-- your current /exec URL
 const ELEVENLABS_AGENT_ID = "agent_2801kww0es8wfbj98vga0f606ph5";
 
 let sessionData = null;
@@ -227,6 +240,62 @@ let cheatingCounter = 0;
 let mediaRecorder = null;
 let recordedChunks = [];
 let questionList = [];
+
+// ---------------------------------------------------------
+// INTERVIEW TYPE CHIPS (multi-select, above the free-text prompt)
+// ---------------------------------------------------------
+const INTERVIEW_TYPES = [
+  "Technical Deep-Dive",
+  "Behavioral / Situational",
+  "Leadership",
+  "Sales / Client-Facing",
+  "Culture Fit",
+  "Problem Solving",
+  "Communication Skills",
+  "Fast-Paced / Startup Screening",
+  "Customer Support",
+  "Project Management",
+  "Market Intelligence / Industry Awareness",
+  "Conceptual Knowledge (Definitions & Fundamentals)",
+  "Analytical / Case Study",
+  "Negotiation Skills",
+  "Adaptability / Learning Agility",
+  "Ethics / Compliance Judgment"
+];
+let selectedInterviewTypes = new Set();
+
+function renderInterviewTypeChips() {
+  const container = document.getElementById("interview-type-chips");
+  container.innerHTML = "";
+  INTERVIEW_TYPES.forEach(type => {
+    const chip = document.createElement("div");
+    chip.className = "chip" + (selectedInterviewTypes.has(type) ? " selected" : "");
+    chip.textContent = type;
+    chip.onclick = () => toggleInterviewType(type);
+    container.appendChild(chip);
+  });
+}
+
+function toggleInterviewType(type) {
+  if (selectedInterviewTypes.has(type)) {
+    selectedInterviewTypes.delete(type);
+  } else {
+    selectedInterviewTypes.add(type);
+  }
+  renderInterviewTypeChips();
+}
+
+// Combines chip selections with the free-text box into one prompt string
+// used both for the AI call and the heuristic fallback.
+function buildCombinedTestingPrompt() {
+  const freeText = document.getElementById("testing-prompt").value.trim();
+  const typesPart = selectedInterviewTypes.size > 0
+    ? "Interview type focus: " + Array.from(selectedInterviewTypes).join(", ") + "."
+    : "";
+  return [typesPart, freeText].filter(Boolean).join("\n");
+}
+
+renderInterviewTypeChips();
 
 // ---------------------------------------------------------
 // STEP 1 -> STEP 2: GET AI-GENERATED QUESTIONS FROM APPS SCRIPT
@@ -240,7 +309,7 @@ async function goToQuestionReview() {
   const clientDetails = document.getElementById("client-details").value.trim();
   const jd = document.getElementById("jd-text").value.trim();
   const resume = document.getElementById("resume-text").value.trim();
-  const testingPrompt = document.getElementById("testing-prompt").value.trim();
+  const testingPrompt = buildCombinedTestingPrompt();
   const errBox = document.getElementById("step1-error");
   const btn = document.getElementById("suggest-btn");
   errBox.style.display = "none";
@@ -327,7 +396,19 @@ const TESTING_THEME_MAP = [
   { pattern: /technical depth|deep technical|architecture|system design/i,
     question: "Walk me through the architecture of the most complex system you've built or maintained." },
   { pattern: /customer|client facing|client-facing/i,
-    question: "Tell me about a time a client or customer was unhappy — what did you do?" }
+    question: "Tell me about a time a client or customer was unhappy — what did you do?" },
+  { pattern: /market intelligence|industry awareness|current market|market trends/i,
+    question: "What's a recent shift or trend in this industry that you think matters right now, and why?" },
+  { pattern: /conceptual knowledge|definitions|fundamentals|book definition/i,
+    question: "Can you explain, in your own words, one of the core concepts this role relies on — not the textbook definition, but how you actually apply it?" },
+  { pattern: /analytical|case study/i,
+    question: "Walk me through how you'd break down an ambiguous, data-light problem into something actionable." },
+  { pattern: /negotiat/i,
+    question: "Tell me about a real negotiation you were part of — what was at stake and what was the outcome?" },
+  { pattern: /adaptab|learning agility|fast learner/i,
+    question: "Tell me about a time you had to quickly learn something completely unfamiliar to do your job — how did you approach it?" },
+  { pattern: /ethics|compliance|integrity/i,
+    question: "Describe a situation where doing the right thing wasn't the easiest or most convenient option — what did you do?" }
 ];
 
 function extractRequirementLines(jd) {
@@ -465,7 +546,7 @@ function generateCandidateAccess() {
     clientDetails: clientDetails,
     recruiterEmail: recruiterEmail,
     questions: questionList.join("\n"),
-    testingPrompt: document.getElementById("testing-prompt").value.trim()
+    testingPrompt: buildCombinedTestingPrompt()
   };
 
   btn.disabled = true;
