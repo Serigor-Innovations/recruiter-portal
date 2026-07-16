@@ -832,10 +832,23 @@ function generateCandidateAccess() {
       catch (e) { throw new Error("Unexpected response from server: " + text.slice(0, 200)); }
 
       if (data.success) {
-        const shortLink = window.location.origin + window.location.pathname + "?id=" + uniqueId;
-        document.getElementById("cand-link").innerText = shortLink;
+        const fullLink = window.location.origin + window.location.pathname + "?id=" + uniqueId;
         document.getElementById("cand-pass").innerText = generatedPassword;
         document.getElementById("output-credentials").style.display = "block";
+        document.getElementById("cand-link").innerText = fullLink; // shown immediately, upgraded below if shortening succeeds
+
+        // Shorten the link directly from the browser so the candidate never sees
+        // "github.io" in what's shared with them. If this fails for any reason
+        // (e.g. a CORS restriction from TinyURL), the full link stays displayed
+        // and nothing breaks — the recruiter always ends up with a working link.
+        fetch("https://tinyurl.com/api-create.php?url=" + encodeURIComponent(fullLink))
+          .then(res => res.text())
+          .then(shortUrl => {
+            if (shortUrl && shortUrl.trim().indexOf("http") === 0) {
+              document.getElementById("cand-link").innerText = shortUrl.trim();
+            }
+          })
+          .catch(() => { /* keep showing the full link if this fails */ });
       } else {
         errBox.textContent = data.error || "Unknown error from server.";
         errBox.style.display = "block";
