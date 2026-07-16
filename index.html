@@ -1025,16 +1025,16 @@ function initializeAssessmentWidgets() {
 // display mode, prefer that over this — it won't be fragile.
 // ---------------------------------------------------------
 function attemptWidgetRepositioning() {
-  const targetContainer = document.getElementById("widget-container");
-  let attempts = 0;
-  const maxAttempts = 20; // ~10 seconds of trying, widget can take a moment to render
+  // We keep re-running this continuously (not just once) because some
+  // widgets reset their own dimensions internally when a call starts,
+  // when the AI speaks, etc. Matches the candidate webcam panel's size:
+  // 360px wide x 270px tall, same rounded corners.
+  const WIDGET_WIDTH = "360px";
+  const WIDGET_HEIGHT = "270px";
 
-  const interval = setInterval(() => {
-    attempts++;
+  setInterval(() => {
     const bodyChildren = Array.from(document.body.children);
 
-    // Look for a top-level element that (a) isn't part of our own page structure,
-    // and (b) is fixed-positioned — the signature of a floating widget overlay.
     const candidate = bodyChildren.find(el => {
       if (el.id === "widget-container" || el.closest("#widget-container")) return false;
       if (el.tagName === "SCRIPT" || el.tagName === "STYLE") return false;
@@ -1044,25 +1044,16 @@ function attemptWidgetRepositioning() {
     });
 
     if (candidate) {
-      candidate.style.position = "relative";
-      candidate.style.inset = "auto";
-      candidate.style.bottom = "auto";
-      candidate.style.right = "auto";
-      candidate.style.left = "auto";
-      candidate.style.top = "auto";
-      candidate.style.width = "100%";
-      candidate.style.maxWidth = "100%";
-      candidate.style.margin = "0 auto";
-      targetContainer.appendChild(candidate);
-      clearInterval(interval);
-      return;
+      candidate.style.width = WIDGET_WIDTH;
+      candidate.style.height = WIDGET_HEIGHT;
+      candidate.style.maxWidth = WIDGET_WIDTH;
+      candidate.style.maxHeight = WIDGET_HEIGHT;
+      candidate.style.borderRadius = "16px";
+      candidate.style.overflow = "hidden";
+      candidate.style.boxShadow = "0 10px 30px rgba(0,0,0,0.4)";
     }
-
-    if (attempts >= maxAttempts) {
-      clearInterval(interval);
-      console.warn("Could not auto-detect the ElevenLabs widget's floating element — it may remain in its default corner position. Check ElevenLabs' dashboard for an official inline/embedded display mode instead.");
-    }
-  }, 500);
+  }, 500); // keep re-applying every half second for the whole interview, in case the widget resets itself
+}
 }
 let lastWarningAt = 0;
 function flagViolation(eventType, details) {
