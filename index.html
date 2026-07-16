@@ -118,6 +118,115 @@
   .file-status { font-size: 12px; margin-top: 4px; min-height: 16px; }
   .file-status.success { color: #166534; }
   .file-status.error { color: #B91C1C; }
+
+  /* ===== FOCUS MODE: richer dark theme for candidate-facing screens ===== */
+  .container.focus-mode {
+    max-width: 920px;
+    background: linear-gradient(180deg, #0F172A 0%, #0B1220 100%);
+    border-top: none;
+    box-shadow: 0 25px 60px -15px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
+    color: #E2E8F0;
+  }
+  .focus-mode .brand-logo { color: #F1F5F9; }
+  .focus-mode .brand-subtitle { color: #64748B; }
+  .focus-mode h2 { color: #F1F5F9; }
+  .focus-mode p { color: #94A3B8; }
+
+  .interview-hero {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin: 28px 0;
+  }
+  @media (max-width: 720px) {
+    .interview-hero { grid-template-columns: 1fr; }
+  }
+  .hero-panel {
+    background: linear-gradient(160deg, rgba(37,99,235,0.12), rgba(15,23,42,0.4));
+    border: 1px solid rgba(148,163,184,0.15);
+    border-radius: 20px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-panel::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 30% 20%, rgba(37,99,235,0.15), transparent 60%);
+    pointer-events: none;
+  }
+  .hero-panel-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+    color: #60A5FA; margin-bottom: 14px; position: relative;
+  }
+  #webcam-feed {
+    width: 100%; max-width: 360px; height: 270px; border-radius: 16px;
+    border: 3px solid #2563EB; background: #000; display: block; transform: scaleX(-1);
+    box-shadow: 0 0 0 4px rgba(37,99,235,0.15), 0 10px 30px rgba(0,0,0,0.4);
+    position: relative;
+  }
+  .ai-panel-inner {
+    width: 100%; min-height: 270px; border-radius: 16px;
+    background: linear-gradient(160deg, #1E293B, #0F172A);
+    border: 3px solid #FCD34D;
+    box-shadow: 0 0 0 4px rgba(252,211,77,0.12), 0 10px 30px rgba(0,0,0,0.4);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    position: relative; padding: 20px;
+  }
+  .ai-panel-icon {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: radial-gradient(circle, #FCD34D, #F59E0B);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; margin-bottom: 14px;
+    box-shadow: 0 0 30px rgba(252,211,77,0.4);
+    animation: pulse-glow 2.5s ease-in-out infinite;
+  }
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 20px rgba(252,211,77,0.3); }
+    50% { box-shadow: 0 0 40px rgba(252,211,77,0.6); }
+  }
+  .ai-panel-text { color: #CBD5E1; font-size: 13px; text-align: center; max-width: 260px; }
+
+  .reminder-strip {
+    background: rgba(30,41,59,0.6); border: 1px solid rgba(148,163,184,0.2);
+    border-radius: 14px; padding: 14px 18px; margin: 20px 0;
+  }
+  .reminder-strip-header {
+    display: flex; align-items: center; gap: 8px; cursor: pointer;
+    font-size: 13px; font-weight: 700; color: #E2E8F0; user-select: none;
+  }
+  .reminder-strip-header .chevron { transition: transform 0.2s; margin-left: auto; color: #64748B; }
+  .reminder-strip-header.expanded .chevron { transform: rotate(180deg); }
+  .reminder-strip-body {
+    display: none; margin-top: 12px; font-size: 12.5px; color: #94A3B8; line-height: 1.8;
+  }
+  .reminder-strip-body.expanded { display: block; }
+  .reminder-strip-body ul { margin: 0; padding-left: 18px; }
+  .reminder-strip-body li { margin-bottom: 4px; }
+
+  .live-badge-focus {
+    display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px;
+    background: rgba(239,68,68,0.12); color: #F87171; border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 24px; font-size: 12px; font-weight: 700; letter-spacing: 0.5px;
+  }
+  .live-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: #EF4444;
+    animation: blink-dot 1.4s ease-in-out infinite;
+  }
+  @keyframes blink-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  .focus-mode #end-interview-btn {
+    background: linear-gradient(135deg, #DC2626, #B91C1C);
+    box-shadow: 0 8px 20px rgba(220,38,38,0.3);
+  }
+  .focus-mode #upload-status { color: #94A3B8; }
+  .focus-mode .warning-banner-focus {
+    background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.35);
+    color: #FCD34D; border-radius: 10px; padding: 12px 16px; font-weight: 600; font-size: 14px;
+  }
   .spinner {
     display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4);
     border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 8px;
@@ -207,9 +316,9 @@
   <!-- CANDIDATE STEP A: PASSWORD + CONSENT -->
   <div id="candidate-auth-view" class="hidden" style="text-align: center;">
     <h2>Identity &amp; Credentials Verification</h2>
-    <p style="color: #64748B; font-size:14px;">Enter the access password sent to you to begin your assessment.</p>
+    <p style="font-size:14px;">Enter the access password sent to you to begin your assessment.</p>
     <input type="text" id="access-password" placeholder="Format: INT-XXXXXX" style="text-align:center; max-width:320px; font-size:16px; margin: 20px 0;"><br>
-    <label style="font-weight:400; display:flex; align-items:flex-start; gap:8px; max-width:400px; margin:16px auto; text-align:left; font-size:13px; color:#475569;">
+    <label style="font-weight:400; display:flex; align-items:flex-start; gap:8px; max-width:400px; margin:16px auto; text-align:left; font-size:13px; color:#94A3B8;">
       <input type="checkbox" id="consent-checkbox" style="width:auto; margin-top:2px;">
       I consent to this session recording my webcam, microphone, and screen activity, and to that recording and activity log being shared with the hiring company.
     </label>
@@ -220,7 +329,7 @@
   <!-- CANDIDATE STEP B: DO'S AND DON'TS -->
   <div id="rules-view" class="hidden">
     <h2>Before You Begin</h2>
-    <ul class="rules-list">
+    <ul class="rules-list" style="color:#CBD5E1;">
       <li>Answer honestly — if you don't know something, simply say so. That's a completely fine answer.</li>
       <li>Ground your answers in real examples from your own experience, not textbook definitions.</li>
       <li>Keep answers short and to the point — real specifics beat long explanations.</li>
@@ -229,26 +338,63 @@
       <li>Don't use AI tools, browser extensions, or a second device during this assessment.</li>
       <li>This session is video and audio recorded and proctored end to end.</li>
       <li>Repeated flagged activity will be visibly logged and shared with the hiring team.</li>
-       <li>TO START AND END THE INTERVIEW PRESS THE BLACK CALL BUTTON ON THE RIGHT SIDE OF YOUR SCREEN.</li>
     </ul>
     <button onclick="launchInterviewEnvironment()">I Understand — Start Interview</button>
   </div>
 
   <!-- CANDIDATE STEP C: LIVE INTERVIEW -->
   <div id="interview-active-view" class="hidden" style="text-align: center;">
-    <div class="status-badge">&#128308; Live Proctoring Activated</div>
-    <h2>Interview System Active</h2>
-    <p style="color: #64748B; font-size: 14px; max-width: 450px; margin: 0 auto 20px;">
-      Click the call icon in the bottom-right corner to begin speaking with the AI interviewer.
+    <div class="live-badge-focus"><span class="live-dot"></span> LIVE PROCTORING ACTIVATED</div>
+    <h2 style="margin-top:16px;">Interview System Active</h2>
+    <p style="font-size: 14px; max-width: 480px; margin: 0 auto;">
+      Click the call icon on the AI Interviewer panel to begin speaking.
     </p>
-    <video id="webcam-feed" autoplay playsinline muted></video>
-    <div id="warning-banner" class="hidden" style="background:#FEF3C7; border:1px solid #FCD34D; color:#92400E; padding:12px 16px; border-radius:8px; margin:0 auto 16px; max-width:450px; font-weight:600; font-size:14px;"></div>
-    <button id="end-interview-btn" onclick="manualEndInterview()" style="max-width:280px; background:#DC2626;">End Interview &amp; Submit Recording</button>
-    <div id="upload-status" style="font-size:13px; color:#64748B; margin-top:10px;"></div>
+
+    <div class="interview-hero">
+      <div class="hero-panel">
+        <div class="hero-panel-label">You</div>
+        <video id="webcam-feed" autoplay playsinline muted></video>
+      </div>
+      <div class="hero-panel">
+        <div class="hero-panel-label">AI Interviewer</div>
+        <div class="ai-panel-inner">
+          <div class="ai-panel-icon">&#127908;</div>
+          <div class="ai-panel-text">Tap the call button below to start speaking with your AI interviewer.</div>
+          <div id="widget-container" style="margin-top:14px; width:100%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="reminder-strip">
+      <div class="reminder-strip-header" id="reminder-toggle" onclick="toggleReminderStrip()">
+        &#128221; Quick Reminder — Do's &amp; Don'ts
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="reminder-strip-body" id="reminder-body">
+        <ul>
+          <li>If you don't know something, just say so — that's a fine answer.</li>
+          <li>Use real examples from your own experience, not textbook definitions.</li>
+          <li>Keep answers short and specific.</li>
+          <li>Don't switch tabs, exit fullscreen, or leave the camera frame.</li>
+          <li>Stay in a well-lit space, facing the camera.</li>
+          <li>No AI tools, browser extensions, or second devices.</li>
+          <li>This session is fully recorded and proctored.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div id="warning-banner" class="hidden warning-banner-focus" style="max-width:480px; margin: 0 auto 16px;"></div>
+    <button id="end-interview-btn" onclick="manualEndInterview()" style="max-width:320px;">End Interview &amp; Submit Recording</button>
+    <div id="upload-status" style="font-size:13px; margin-top:10px;"></div>
   </div>
 </div>
 
-<div id="widget-container"></div>
+<script>
+function toggleReminderStrip() {
+  document.getElementById("reminder-toggle").classList.toggle("expanded");
+  document.getElementById("reminder-body").classList.toggle("expanded");
+}
+</script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
@@ -713,6 +859,7 @@ window.onload = function () {
   const urlParams = new URLSearchParams(window.location.search);
   const id = urlParams.get('id');
   if (id) {
+    document.querySelector(".container").classList.add("focus-mode");
     document.getElementById("recruiter-view").classList.add("hidden");
     document.getElementById("candidate-auth-view").classList.remove("hidden");
 
