@@ -178,15 +178,16 @@
   }
   .ai-panel-icon {
     width: 72px; height: 72px; border-radius: 50%;
-    background: radial-gradient(circle, #FCD34D, #F59E0B);
+    background: #000000;
     display: flex; align-items: center; justify-content: center;
-    font-size: 32px; margin-bottom: 14px;
-    box-shadow: 0 0 30px rgba(252,211,77,0.4);
+    margin-bottom: 14px;
+    box-shadow: 0 0 0 6px rgba(0,0,0,0.15), 0 8px 24px rgba(0,0,0,0.5);
     animation: pulse-glow 2.5s ease-in-out infinite;
   }
+  .ai-panel-icon svg { width: 30px; height: 30px; }
   @keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 20px rgba(252,211,77,0.3); }
-    50% { box-shadow: 0 0 40px rgba(252,211,77,0.6); }
+    0%, 100% { box-shadow: 0 0 0 6px rgba(0,0,0,0.15), 0 8px 24px rgba(0,0,0,0.4); }
+    50% { box-shadow: 0 0 0 10px rgba(0,0,0,0.25), 0 8px 28px rgba(0,0,0,0.6); }
   }
   .ai-panel-text { color: #CBD5E1; font-size: 13px; text-align: center; max-width: 260px; }
 
@@ -358,7 +359,11 @@
       <div class="hero-panel">
         <div class="hero-panel-label">AI Interviewer</div>
         <div class="ai-panel-inner">
-          <div class="ai-panel-icon">&#127908;</div>
+          <div class="ai-panel-icon">
+          <svg viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.24.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+          </svg>
+        </div>
           <div class="ai-panel-text">Tap the call button below to start speaking with your AI interviewer.</div>
           <div id="widget-container" style="margin-top:14px; width:100%;"></div>
         </div>
@@ -998,6 +1003,7 @@ function initializeAssessmentWidgets() {
   const script = document.createElement("script");
   script.src = "https://unpkg.com/@elevenlabs/convai-widget-embed";
   script.async = true;
+  script.onload = function () { attemptWidgetRepositioning(); };
   document.body.appendChild(script);
 
   window.addEventListener("message", function (event) {
@@ -1008,8 +1014,56 @@ function initializeAssessmentWidgets() {
 }
 
 // ---------------------------------------------------------
-// REAL-TIME VIOLATION LOGGING + WARNING BANNER
+// BEST-EFFORT: force the ElevenLabs widget into our centered
+// panel instead of its default floating corner position.
+// This is a fallback hack — it watches the page for any new
+// fixed-position element that appears after the widget script
+// loads, and moves it into our AI panel container, stripping
+// the fixed positioning. If ElevenLabs ever changes their
+// widget's internal structure, this may need adjusting. If
+// ElevenLabs' dashboard offers an official "embedded/inline"
+// display mode, prefer that over this — it won't be fragile.
 // ---------------------------------------------------------
+function attemptWidgetRepositioning() {
+  const targetContainer = document.getElementById("widget-container");
+  let attempts = 0;
+  const maxAttempts = 20; // ~10 seconds of trying, widget can take a moment to render
+
+  const interval = setInterval(() => {
+    attempts++;
+    const bodyChildren = Array.from(document.body.children);
+
+    // Look for a top-level element that (a) isn't part of our own page structure,
+    // and (b) is fixed-positioned — the signature of a floating widget overlay.
+    const candidate = bodyChildren.find(el => {
+      if (el.id === "widget-container" || el.closest("#widget-container")) return false;
+      if (el.tagName === "SCRIPT" || el.tagName === "STYLE") return false;
+      if (el.classList.contains("container")) return false; // our own main card
+      const style = window.getComputedStyle(el);
+      return style.position === "fixed";
+    });
+
+    if (candidate) {
+      candidate.style.position = "relative";
+      candidate.style.inset = "auto";
+      candidate.style.bottom = "auto";
+      candidate.style.right = "auto";
+      candidate.style.left = "auto";
+      candidate.style.top = "auto";
+      candidate.style.width = "100%";
+      candidate.style.maxWidth = "100%";
+      candidate.style.margin = "0 auto";
+      targetContainer.appendChild(candidate);
+      clearInterval(interval);
+      return;
+    }
+
+    if (attempts >= maxAttempts) {
+      clearInterval(interval);
+      console.warn("Could not auto-detect the ElevenLabs widget's floating element — it may remain in its default corner position. Check ElevenLabs' dashboard for an official inline/embedded display mode instead.");
+    }
+  }, 500);
+}
 let lastWarningAt = 0;
 function flagViolation(eventType, details) {
   const now = Date.now();
