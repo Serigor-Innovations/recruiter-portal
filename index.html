@@ -410,7 +410,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs
 // =========================================================
 // CONFIG
 // =========================================================
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwrkIskGvwfYRiqRI2zF3CdQ2wA2-jjXJ0zl71TPApe52Mo1_h_K8rU8MBAF44PjtNT/exec"; // <-- your current /exec URL
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyM9uWIB5XwQJ320ghkPKkPxaWxTzhL9yEspyD1kg6_-HT2hIPDsexYQjY7XVrEPabs/exec"; // <-- your confirmed working /exec URL
 const ELEVENLABS_AGENT_ID = "agent_2801kww0es8wfbj98vga0f606ph5";
 
 let sessionData = null;
@@ -1053,7 +1053,6 @@ function attemptWidgetRepositioning() {
       candidate.style.boxShadow = "0 10px 30px rgba(0,0,0,0.4)";
     }
   }, 500); // keep re-applying every half second for the whole interview, in case the widget resets itself
-}
 }
 let lastWarningAt = 0;
 function flagViolation(eventType, details) {
