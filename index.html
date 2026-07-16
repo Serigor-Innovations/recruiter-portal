@@ -268,6 +268,9 @@
     <div class="file-status" id="jd-file-status"></div>
     <textarea id="jd-text" placeholder="Paste the job description, or upload a file above..."></textarea>
 
+    <label>Candidate Full Name</label>
+    <input type="text" id="candidate-name" placeholder="e.g. Priya Sharma">
+
     <label>Candidate Resume</label>
     <div class="file-drop-zone" id="resume-drop-zone" ondragover="handleDragOver(event, 'resume-drop-zone')" ondragleave="handleDragLeave(event, 'resume-drop-zone')" ondrop="handleDrop(event, 'resume-file-input')">
       Drag &amp; drop a PDF or Word file here, or <label for="resume-file-input">browse</label>
@@ -814,7 +817,8 @@ function generateCandidateAccess() {
     clientDetails: clientDetails,
     recruiterEmail: recruiterEmail,
     questions: questionList.join("\n"),
-    testingPrompt: buildCombinedTestingPrompt()
+    testingPrompt: buildCombinedTestingPrompt(),
+    candidateName: document.getElementById("candidate-name").value.trim()
   };
 
   btn.disabled = true;
@@ -835,20 +839,7 @@ function generateCandidateAccess() {
         const fullLink = window.location.origin + window.location.pathname + "?id=" + uniqueId;
         document.getElementById("cand-pass").innerText = generatedPassword;
         document.getElementById("output-credentials").style.display = "block";
-        document.getElementById("cand-link").innerText = fullLink; // shown immediately, upgraded below if shortening succeeds
-
-        // Shorten the link directly from the browser so the candidate never sees
-        // "github.io" in what's shared with them. If this fails for any reason
-        // (e.g. a CORS restriction from TinyURL), the full link stays displayed
-        // and nothing breaks — the recruiter always ends up with a working link.
-        fetch("https://tinyurl.com/api-create.php?url=" + encodeURIComponent(fullLink))
-          .then(res => res.text())
-          .then(shortUrl => {
-            if (shortUrl && shortUrl.trim().indexOf("http") === 0) {
-              document.getElementById("cand-link").innerText = shortUrl.trim();
-            }
-          })
-          .catch(() => { /* keep showing the full link if this fails */ });
+        document.getElementById("cand-link").innerText = fullLink;
       } else {
         errBox.textContent = data.error || "Unknown error from server.";
         errBox.style.display = "block";
